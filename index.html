@@ -1,0 +1,2066 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<meta name="description" content="Invigi — an on-device AI invigilator that learns your study areas, detects phones and drift, and keeps you focused."/>
+<title>Invigi — Study Accountability</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%232F6B4F' d='M12 3l9 18H3z'/%3E%3C/svg%3E"/>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..600&family=Schibsted+Grotesk:wght@400;500;600;700&family=Spline+Sans+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F3F0E7; --surface:#FBF9F3; --ink:#1F1D18; --muted:#6F6A5C; --line:#E2DDCC;
+  --accent:#2F6B4F; --accent-ink:#F3F0E7; --amber:#A6721B; --red:#B23A2A; --stone:#8B8677;
+  --shadow:0 1px 2px rgba(31,29,24,.06),0 8px 28px rgba(31,29,24,.07); --r:14px;
+}
+[data-theme="dark"]{
+  --bg:#161511; --surface:#1E1C16; --ink:#ECE8DB; --muted:#9A947F; --line:#2D2A21;
+  --accent:#63A981; --accent-ink:#14130F; --amber:#CE9A45; --red:#D4694F; --stone:#7C7768;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px rgba(0,0,0,.35);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font-family:"Schibsted Grotesk",sans-serif;font-size:16px;line-height:1.55;-webkit-font-smoothing:antialiased;min-height:100vh}
+h1,h2,h3,.serif{font-family:Fraunces,serif;font-weight:600;letter-spacing:-.01em}
+.mono{font-family:"Spline Sans Mono",monospace;font-variant-numeric:tabular-nums}
+button{font:inherit;color:inherit;cursor:pointer;background:none;border:none}
+input,select{font:inherit;color:inherit}
+a{color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+header.top{display:flex;align-items:center;gap:24px;padding:14px 28px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--bg);z-index:40}
+.brand{font-family:Fraunces,serif;font-size:22px;font-weight:600;font-style:italic;display:flex;align-items:center;gap:10px}
+.brand svg{width:20px;height:20px}
+nav{display:flex;gap:2px;margin-left:8px}
+nav button{padding:7px 14px;border-radius:99px;color:var(--muted);font-weight:500;font-size:14.5px}
+nav button:hover{color:var(--ink)}
+nav button.active{background:var(--ink);color:var(--bg)}
+nav button.locked{opacity:.35;pointer-events:none}
+#monitorChip{margin-left:auto;display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);border:1px solid var(--line);border-radius:99px;padding:5px 12px;background:var(--surface)}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--stone);flex:none}
+.dot.live{background:var(--accent)} .dot.warn{background:var(--amber)} .dot.err{background:var(--red)}
+.dot.pulse{animation:pulse 1.6s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.35}}
+main{max-width:1100px;margin:0 auto;padding:34px 28px 90px}
+.view{display:none}.view.on{display:block}
+.btn{display:inline-flex;align-items:center;gap:9px;padding:11px 20px;border-radius:12px;font-weight:600;font-size:15px;border:1px solid var(--line);background:var(--surface);transition:transform .12s ease,box-shadow .12s ease}
+.btn:hover{box-shadow:var(--shadow)} .btn:active{transform:translateY(1px)}
+.btn svg{width:17px;height:17px}
+.btn.primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.btn.accent{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn.danger{color:var(--red);border-color:var(--red)}
+.btn.small{padding:7px 13px;font-size:13.5px;border-radius:9px}
+.btn:disabled{opacity:.45;pointer-events:none}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:22px}
+.rule{border:none;border-top:1px solid var(--line);margin:20px 0}
+label.field{display:block;margin-bottom:16px}
+label.field>span{display:block;font-size:12.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:7px}
+input[type=text],input[type=number],select{width:100%;padding:10px 13px;border:1px solid var(--line);border-radius:10px;background:var(--bg)}
+input[type=range]{width:100%;accent-color:var(--accent)}
+.chip{padding:9px 16px;border:1px solid var(--line);border-radius:10px;background:var(--surface);font-weight:600;font-size:14.5px}
+.chip.sel{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.switch{position:relative;width:42px;height:24px;flex:none;display:inline-block}
+.switch input{opacity:0;width:0;height:0}
+.switch i{position:absolute;inset:0;background:var(--line);border-radius:99px;transition:.18s}
+.switch i:before{content:"";position:absolute;width:18px;height:18px;border-radius:50%;background:var(--surface);top:3px;left:3px;transition:.18s;box-shadow:0 1px 3px rgba(0,0,0,.25)}
+.switch input:checked+i{background:var(--accent)}
+.switch input:checked+i:before{transform:translateX(18px)}
+.setrow{display:flex;justify-content:space-between;align-items:center;gap:20px;padding:15px 0;border-bottom:1px solid var(--line)}
+.setrow:last-child{border-bottom:none}
+.setrow .lbl b{display:block;font-weight:600} .setrow .lbl span{font-size:13.5px;color:var(--muted)}
+.pill{display:inline-flex;align-items:center;gap:8px;padding:6px 14px;border-radius:99px;font-weight:600;font-size:14px;border:1px solid transparent}
+.pill.st-focused{background:color-mix(in srgb,var(--accent) 14%,transparent);color:var(--accent);border-color:color-mix(in srgb,var(--accent) 35%,transparent)}
+.pill.st-possibly{background:color-mix(in srgb,var(--amber) 14%,transparent);color:var(--amber);border-color:color-mix(in srgb,var(--amber) 35%,transparent)}
+.pill.st-distracted,.pill.st-away{background:color-mix(in srgb,var(--red) 13%,transparent);color:var(--red);border-color:color-mix(in srgb,var(--red) 35%,transparent)}
+.pill.st-break,.pill.st-paused,.pill.st-unobserved{background:color-mix(in srgb,var(--stone) 13%,transparent);color:var(--stone);border-color:color-mix(in srgb,var(--stone) 35%,transparent)}
+.pill.st-calibrating{background:color-mix(in srgb,var(--amber) 10%,transparent);color:var(--amber)}
+.prepGrid{display:grid;grid-template-columns:1.35fr .9fr;gap:44px;align-items:start}
+@media(max-width:900px){.prepGrid{grid-template-columns:1fr}}
+.kicker{font-size:12.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--accent)}
+.prepGrid h1{font-size:clamp(30px,4.4vw,44px);line-height:1.12;margin:10px 0 8px}
+.prepGrid h1 em{font-style:italic;font-weight:400;color:var(--muted)}
+.lede{color:var(--muted);max-width:52ch;margin-bottom:26px}
+.initList{margin-top:20px;border-top:1px solid var(--line)}
+.initItem{display:flex;align-items:center;gap:12px;padding:11px 2px;border-bottom:1px solid var(--line);font-size:14.5px}
+.initItem .st{margin-left:auto;font-size:13px;color:var(--muted)}
+.initItem.ok .st{color:var(--accent)} .initItem.err .st{color:var(--red)}
+.privList{list-style:none;margin-top:10px}
+.privList li{display:flex;gap:11px;padding:9px 0;font-size:14.5px;color:var(--muted);border-bottom:1px dashed var(--line)}
+.privList li:last-child{border:none}
+.privList svg{width:17px;height:17px;flex:none;margin-top:2px;color:var(--accent)}
+.sessionHead{display:flex;justify-content:space-between;align-items:flex-start;gap:18px;flex-wrap:wrap;margin-bottom:8px}
+.sessionMeta{font-size:14px;color:var(--muted)} .sessionMeta b{color:var(--ink)}
+.heroTimer{display:flex;align-items:baseline;gap:26px;flex-wrap:wrap;margin:14px 0 6px}
+#timerBig{font-family:"Spline Sans Mono",monospace;font-size:clamp(64px,10vw,104px);font-weight:500;letter-spacing:-.02em;line-height:1}
+#statusWord{font-family:Fraunces,serif;font-style:italic;font-size:clamp(22px,3vw,32px);color:var(--muted)}
+.metrics{display:flex;gap:0;flex-wrap:wrap;border-top:1px solid var(--line);border-bottom:1px solid var(--line);margin:22px 0}
+.metric{padding:15px 26px 15px 0;margin-right:26px;border-right:1px solid var(--line)}
+.metric:last-child{border-right:none}
+.metric .k{font-size:11.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.metric .v{font-family:"Spline Sans Mono",monospace;font-size:23px;font-weight:500;margin-top:3px}
+#ribbonCanvas{width:100%;height:58px;display:block;border-radius:8px}
+.ribbonLabel{font-size:12px;color:var(--muted);margin:6px 2px 20px;display:flex;justify-content:space-between}
+.sessionLower{display:grid;grid-template-columns:1fr 300px;gap:34px;align-items:start}
+@media(max-width:860px){.sessionLower{grid-template-columns:1fr}}
+.controls{display:flex;gap:12px;flex-wrap:wrap}
+#alertBanner{display:none;align-items:center;gap:14px;border:1px solid var(--red);background:color-mix(in srgb,var(--red) 9%,var(--surface));border-radius:12px;padding:13px 18px;margin:0 0 18px;font-weight:500}
+#alertBanner.on{display:flex;animation:slideIn .3s ease}
+@keyframes slideIn{from{opacity:0;transform:translateY(-6px)}}
+#alertBanner svg{width:20px;height:20px;color:var(--red);flex:none}
+#alertMsg{flex:1}
+.camPanel video{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:12px;background:#000;transform:scaleX(-1);border:1px solid var(--line)}
+.devRow{display:flex;justify-content:space-between;align-items:center;padding:9px 2px;font-size:14px;border-bottom:1px dashed var(--line)}
+.devRow:last-child{border:none}
+.meterWrap{width:90px;height:6px;background:var(--line);border-radius:99px;overflow:hidden}
+.meterWrap i{display:block;height:100%;width:0;background:var(--accent);transition:width .12s linear;border-radius:99px}
+#selfToggle{font-size:13px;color:var(--muted);text-decoration:underline;margin-top:8px;display:inline-block}
+#telemetry{font-size:12.5px;text-align:right;color:var(--muted)}
+#firstHint{display:none;margin-top:14px;padding:12px 16px;border:1px solid var(--amber);background:color-mix(in srgb,var(--amber) 9%,var(--surface));border-radius:12px;font-size:14px;color:var(--ink)}
+#firstHint.on{display:block}
+.completeWrap{max-width:720px;margin:0 auto}
+.completeWrap h1{font-size:clamp(32px,5vw,46px);margin-bottom:6px}
+.resGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;margin:26px 0}
+.resGrid>div{background:var(--surface);padding:18px 20px}
+.resGrid .k{font-size:11.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.resGrid .v{font-family:"Spline Sans Mono",monospace;font-size:26px;margin-top:4px}
+@media(max-width:640px){.resGrid{grid-template-columns:repeat(2,1fr)}}
+#cSummary{font-size:16.5px;line-height:1.7}
+.histItem{border:1px solid var(--line);border-radius:var(--r);background:var(--surface);margin-bottom:14px;overflow:hidden}
+.histHead{display:flex;align-items:center;gap:18px;padding:16px 20px;flex-wrap:wrap;cursor:pointer}
+.histHead .date{font-weight:600;min-width:130px}
+.histHead .sub{color:var(--muted);font-size:14px;flex:1}
+.histHead .score{font-family:"Spline Sans Mono",monospace;font-weight:600}
+.histDetail{display:none;border-top:1px solid var(--line);padding:18px 20px}
+.histItem.open .histDetail{display:block}
+.histStats{display:flex;gap:24px;flex-wrap:wrap;font-size:14px;color:var(--muted);margin:12px 0}
+.histStats b{color:var(--ink);font-family:"Spline Sans Mono",monospace}
+.evList{margin-top:10px;font-size:13.5px}
+.evList div{padding:5px 0;border-bottom:1px dashed var(--line);display:flex;gap:14px}
+.evList .t{font-family:"Spline Sans Mono",monospace;color:var(--muted);min-width:64px}
+.insGrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin:18px 0 30px}
+.insCard{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px 18px}
+.insCard .k{font-size:11.5px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--muted)}
+.insCard .v{font-family:"Spline Sans Mono",monospace;font-size:26px;margin-top:5px}
+h2.sect{font-size:24px;margin:36px 0 6px}
+.subTrend{color:var(--muted);font-size:14.5px;margin-bottom:14px}
+svg.chart{width:100%;height:auto;display:block}
+#toasts{position:fixed;top:70px;right:22px;z-index:90;display:flex;flex-direction:column;gap:10px;max-width:340px}
+.toast{background:var(--ink);color:var(--bg);padding:13px 17px;border-radius:12px;font-size:14.5px;box-shadow:var(--shadow);animation:slideIn .25s ease;display:flex;gap:10px;align-items:flex-start}
+.toast svg{width:17px;height:17px;flex:none;margin-top:2px}
+.toast.out{opacity:0;transition:opacity .3s}
+#modalRoot{position:fixed;inset:0;z-index:100;display:none;align-items:center;justify-content:center;background:rgba(20,18,12,.5);padding:20px}
+#modalRoot.on{display:flex}
+.modal{background:var(--surface);border:1px solid var(--line);border-radius:18px;max-width:540px;width:100%;padding:28px;box-shadow:var(--shadow);max-height:86vh;overflow:auto}
+.modal h3{font-size:23px;margin-bottom:6px}
+.modal .mbody{color:var(--muted);font-size:15px}
+.modalActions{display:flex;gap:10px;justify-content:flex-end;margin-top:24px;flex-wrap:wrap}
+.stopStats{margin:18px 0;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.stopStats div{display:flex;justify-content:space-between;padding:10px 16px;border-bottom:1px solid var(--line);font-size:14.5px}
+.stopStats div:last-child{border:none}
+.stopStats b{font-family:"Spline Sans Mono",monospace}
+.testRow{display:flex;gap:10px;padding:7px 0;border-bottom:1px dashed var(--line);font-size:14px;align-items:baseline}
+.testRow .nm{flex:1} .testRow .ok{color:var(--accent);font-weight:600} .testRow .fail{color:var(--red);font-weight:600}
+.testRow .msg{color:var(--muted);font-size:12.5px}
+.hint{font-size:13px;color:var(--muted)}
+.errText{color:var(--red);font-size:13.5px;margin-top:6px}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="brand">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 3v18M5 10l7-7 7 7"/></svg>
+    Invigi
+  </div>
+  <nav id="nav">
+    <button data-view="prep" class="active">Focus</button>
+    <button data-view="history">History</button>
+    <button data-view="insights">Insights</button>
+    <button data-view="settings">Settings</button>
+  </nav>
+  <div id="monitorChip"><span class="dot" id="chipDot"></span><span id="chipText">Not monitoring</span></div>
+</header>
+
+<main>
+
+<section class="view on" id="view-prep">
+  <div class="prepGrid">
+    <div>
+      <div class="kicker">Study accountability · on-device ML</div>
+      <h1>Set your goal. The invigilator <em>learns where your books live</em> — and calls you back when you truly drift.</h1>
+      <p class="lede">Invigi runs adaptive on-device machine learning: it learns your personal study areas — screen, notebook, textbook — tells genuine drift (phone, absence, noise, zoned-out staring) apart from reading and writing, and sounds a siren that keeps sounding until you're back at work.</p>
+
+      <div class="card" style="margin-bottom:20px">
+        <label class="field"><span>Focus goal</span></label>
+        <div class="row" id="goalChips">
+          <button class="chip" data-mins="25">25 min</button>
+          <button class="chip" data-mins="45">45 min</button>
+          <button class="chip sel" data-mins="60">60 min</button>
+          <button class="chip" data-mins="90">90 min</button>
+          <input type="number" id="customMin" min="5" max="480" placeholder="Custom" style="width:96px">
+        </div>
+        <hr class="rule">
+        <div class="row">
+          <label class="field" style="flex:1;min-width:150px"><span>Subject</span><input type="text" id="subject" placeholder="Mathematics"></label>
+          <label class="field" style="flex:1.4;min-width:180px"><span>Task</span><input type="text" id="task" placeholder="Complete chapter 4 exercises"></label>
+          <label class="field" style="flex:1;min-width:150px"><span>Target (optional)</span><input type="text" id="target" placeholder="Finish 20 questions"></label>
+        </div>
+        <div class="row" style="justify-content:space-between">
+          <label class="row" style="gap:10px;cursor:pointer">
+            <span class="switch"><input type="checkbox" id="prepPomo"><i></i></span>
+            <span style="font-weight:600">Pomodoro mode</span>
+            <span class="hint" id="pomoSummary"></span>
+          </label>
+        </div>
+      </div>
+
+      <button class="btn accent" id="startBtn" style="font-size:17px;padding:15px 30px">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+        Start studying
+      </button>
+      <p class="errText" id="startErr"></p>
+      <p class="hint" id="storageHint" style="margin-top:10px"></p>
+
+      <div class="initList" id="initPanel" hidden>
+        <div class="initItem" id="stModel"><span class="dot"></span> Loading AI models… <span class="st"></span></div>
+        <div class="initItem" id="stCam"><span class="dot"></span> Initializing camera… <span class="st"></span></div>
+        <div class="initItem" id="stMic"><span class="dot"></span> Initializing microphone… <span class="st"></span></div>
+        <div class="initItem" id="stReady"><span class="dot"></span> AI monitoring status <span class="st"></span></div>
+      </div>
+    </div>
+
+    <div>
+      <div class="card">
+        <h3 style="font-size:19px">Privacy, plainly stated</h3>
+        <ul class="privList">
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z"/></svg>
+            All sensing and all ML happen in your browser. Camera frames and audio are analyzed in memory and discarded — nothing is uploaded, ever.</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M8 12h8"/></svg>
+            Nothing is recorded. Audio is reduced to anonymous signal levels — never content. The adaptive model stores only anonymous angle numbers describing <em>where</em> your study areas are.</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8 12l3 3 5-6"/></svg>
+            Only session summaries and those angle numbers are saved — in this browser, on your own computer. Export or erase them anytime.</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12h16M12 4v16"/></svg>
+            How it decides: it learns your study zones continuously, checks for reading-like eye movement before judging an unfamiliar direction, detects phones with a real object detector plus a screen-flicker analyzer, and flags sustained loud audio (media, conversation). Leaving the desk (~20 s) or a phone in view (~7 s) sounds the siren until you return.</li>
+        </ul>
+      </div>
+      <p class="hint" style="margin-top:14px">AI models (~7&nbsp;MB) are fetched once from a public CDN and cached. Internet is needed the first time; after that, everything is offline and local.</p>
+    </div>
+  </div>
+</section>
+
+<section class="view" id="view-session">
+  <div class="sessionHead">
+    <div>
+      <div class="sessionMeta" id="sessionSubject"></div>
+      <div class="heroTimer">
+        <div class="mono" id="timerBig">00:00</div>
+        <div>
+          <div id="statusWord" aria-live="polite">Focused</div>
+          <span class="pill st-focused" id="statusPill">Focused</span>
+        </div>
+      </div>
+    </div>
+    <div style="text-align:right">
+      <div class="metric" style="border:none;padding:0">
+        <div class="k">Focus score</div>
+        <div class="v" id="scoreVal" style="font-size:34px">—</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="alertBanner" role="alert">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9L1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/></svg>
+    <span id="alertMsg"></span>
+    <button class="btn small" id="stopSirenBtn">Stop siren</button>
+    <button class="btn small" id="overrideBtn">That was not a distraction</button>
+  </div>
+
+  <div class="metrics">
+    <div class="metric"><div class="k">Focused</div><div class="v" id="focusedVal">0 min</div></div>
+    <div class="metric"><div class="k">Distracted</div><div class="v" id="distractVal">0 min</div></div>
+    <div class="metric"><div class="k">Current drift</div><div class="v" id="currentDistract">—</div></div>
+    <div class="metric"><div class="k">Goal</div><div class="v" id="goalVal">0 / 60 min</div></div>
+    <div class="metric" style="flex:1;min-width:180px"><div class="k" id="goalLabel">Progress</div><div style="height:9px;background:var(--line);border-radius:99px;margin-top:12px;overflow:hidden"><div id="goalBar" style="height:100%;width:0;background:var(--accent);border-radius:99px;transition:width .5s"></div></div></div>
+  </div>
+
+  <canvas id="ribbonCanvas" width="1040" height="58"></canvas>
+  <div class="ribbonLabel"><span>Session attention ribbon</span><span id="ribbonRight"></span></div>
+
+  <div class="sessionLower">
+    <div>
+      <div class="controls">
+        <button class="btn" id="pauseBtn"></button>
+        <button class="btn" id="breakBtn"></button>
+        <button class="btn danger" id="stopBtn">
+          <svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>Stop studying
+        </button>
+      </div>
+      <div id="firstHint">First session: use your books, notebook, and screen normally for the first minute or two — I'm learning your study areas. Brief "possibly distracted" notes while I learn are normal and won't trigger the siren.</div>
+      <p class="hint" style="margin-top:14px">Reading and writing never need "approval" — the model learns them as zones. If the siren is ever wrong, press “That was not a distraction” and it learns that direction permanently.</p>
+    </div>
+    <div class="card camPanel">
+      <video id="camVideo" playsinline muted></video>
+      <a href="#" id="selfToggle">hide self-view</a>
+      <div style="margin-top:12px">
+        <div class="devRow"><span class="row" style="gap:8px"><span class="dot" id="camDot"></span>Camera</span><span id="camStatus">Off</span></div>
+        <div class="devRow"><span class="row" style="gap:8px"><span class="dot" id="micDot"></span>Microphone</span><span class="row" style="gap:10px"><span class="meterWrap"><i id="micLevel"></i></span><span id="micStatus">Off</span></span></div>
+        <div class="devRow"><span style="color:var(--muted)">Live signals</span><span class="mono" id="telemetry">—</span></div>
+        <div class="devRow"><span style="color:var(--muted)">Monitoring</span><span id="monitorDetail">—</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="view" id="view-complete">
+  <div class="completeWrap">
+    <div class="kicker" id="cKicker">Session complete</div>
+    <h1 id="cTitle">Well done.</h1>
+    <div class="resGrid" id="cStats"></div>
+    <canvas id="cRibbon" width="720" height="58" style="width:100%"></canvas>
+    <div class="ribbonLabel"><span>Your session, from start to finish</span></div>
+    <hr class="rule">
+    <p id="cSummary"></p>
+    <div class="row" style="margin-top:28px">
+      <button class="btn primary" id="againBtn">Start a new session</button>
+      <button class="btn" id="cHistoryBtn">View history</button>
+    </div>
+  </div>
+</section>
+
+<section class="view" id="view-history">
+  <h2 class="sect" style="margin-top:0">Session history</h2>
+  <p class="hint" style="margin-bottom:22px">Saved in this browser on this computer. Click a session to expand its details.</p>
+  <div id="historyList"></div>
+</section>
+
+<section class="view" id="view-insights">
+  <h2 class="sect" style="margin-top:0">Insights</h2>
+  <p class="hint" style="margin-bottom:8px">Computed locally from your real session data.</p>
+  <div class="insGrid" id="insToday"></div>
+  <h2 class="sect">This week</h2>
+  <div class="insGrid" id="insWeek"></div>
+  <h2 class="sect">Daily focus minutes · last 14 days</h2>
+  <div id="chartDays"></div>
+  <h2 class="sect">Trend</h2>
+  <p class="subTrend" id="trendText"></p>
+  <div id="chartTrend"></div>
+</section>
+
+<section class="view" id="view-settings">
+  <h2 class="sect" style="margin-top:0">Settings</h2>
+  <div class="card" style="max-width:720px">
+    <h3 style="font-size:17px;margin-bottom:4px">Monitoring &amp; privacy</h3>
+    <div class="setrow"><div class="lbl"><b>Camera monitoring</b><span>Visual attention analysis via on-device face + iris landmarks</span></div><span class="switch"><input type="checkbox" id="setCam"><i></i></span></div>
+    <div class="setrow"><div class="lbl"><b>Microphone monitoring</b><span>Non-content signal analysis: sustained loudness &amp; voice-band energy only</span></div><span class="switch"><input type="checkbox" id="setMic"><i></i></span></div>
+    <div class="setrow"><div class="lbl"><b>Phone detection</b><span>On-device object detector + screen-flicker analyzer (takes effect next session)</span></div><span class="switch"><input type="checkbox" id="setPhone"><i></i></span></div>
+    <div class="setrow"><div class="lbl"><b>Learned study areas</b><span id="zonesDesc"></span></div>
+      <button class="btn small" id="resetZonesBtn">Reset zones</button></div>
+    <div class="setrow"><div class="lbl"><b>Distraction sensitivity</b><span>How far outside your learned zones attention may wander</span></div>
+      <select id="setSens" style="width:160px"><option value="relaxed">Relaxed</option><option value="balanced">Balanced</option><option value="strict">Strict</option></select></div>
+    <div class="setrow"><div class="lbl"><b>Alert delay</b><span>Seconds a drift must persist before the siren (<b id="alertDelayOut"></b>s)</span></div><input type="range" id="setAlertDelay" min="4" max="30" step="1" style="width:180px"></div>
+
+    <h3 style="font-size:17px;margin:26px 0 4px">Alerts</h3>
+    <div class="setrow"><div class="lbl"><b>Alert sound</b><span>Siren rings continuously until you return or stop it</span></div><select id="setAlertSound" style="width:180px"><option value="siren">Siren (continuous)</option><option value="chime">Chime (repeats)</option><option value="ping">Ping (repeats)</option><option value="pulse">Pulse (repeats)</option><option value="silent">Silent</option></select></div>
+    <div class="setrow"><div class="lbl"><b>Sound alerts enabled</b></div><span class="switch"><input type="checkbox" id="setAlertsOn"><i></i></span></div>
+    <div class="setrow"><div class="lbl"><b>Volume</b><span><b id="volOut"></b>%</span></div><input type="range" id="setVolume" min="0" max="100" step="5" style="width:180px"></div>
+    <div class="setrow"><div class="lbl"><b>Re-siren cooldown</b><span>After manually stopping the siren while still distracted (<b id="cooldownOut"></b>s)</span></div><input type="range" id="setCooldown" min="15" max="120" step="5" style="width:180px"></div>
+    <div class="setrow"><div class="lbl"><b>Browser notifications</b><span>Reach you even if this tab is in the background. At most one per minute.</span></div>
+      <div class="row"><span class="hint" id="notifState"></span><span class="switch"><input type="checkbox" id="setNotif"><i></i></span></div></div>
+
+    <h3 style="font-size:17px;margin:26px 0 4px">Motivation</h3>
+    <div class="setrow"><div class="lbl"><b>Motivational interventions</b><span>Stronger message when a distraction lasts a long time</span></div><span class="switch"><input type="checkbox" id="setMotivOn"><i></i></span></div>
+    <div class="setrow"><div class="lbl"><b>Trigger after</b><span>of continuous distraction (<b id="motivOut"></b>)</span></div><input type="range" id="setMotivDelay" min="60" max="300" step="15" style="width:180px"></div>
+    <div class="setrow"><div class="lbl"><b>Repeat every</b><span>while still distracted (<b id="motivRepOut"></b>)</span></div><input type="range" id="setMotivRepeat" min="30" max="180" step="15" style="width:180px"></div>
+
+    <h3 style="font-size:17px;margin:26px 0 4px">Pomodoro</h3>
+    <div class="setrow"><div class="lbl"><b>Focus / short / long (min)</b></div><div class="row" style="width:230px;gap:8px"><input type="number" id="pmFocus" min="5" max="90"><input type="number" id="pmShort" min="1" max="30"><input type="number" id="pmLong" min="5" max="45"></div></div>
+    <div class="setrow"><div class="lbl"><b>Cycles before long break</b></div><input type="number" id="pmCycles" min="2" max="8" style="width:80px"></div>
+
+    <h3 style="font-size:17px;margin:26px 0 4px">General</h3>
+    <div class="setrow"><div class="lbl"><b>Appearance</b></div><select id="setTheme" style="width:160px"><option value="light">Light</option><option value="dark">Dark</option></select></div>
+    <div class="setrow"><div class="lbl"><b>Auto-save sessions</b><span>Save completed sessions in this browser</span></div><span class="switch"><input type="checkbox" id="setAutoSave"><i></i></span></div>
+    <div class="setrow"><div class="lbl"><b>Self-tests</b><span>Run the built-in engine, ML-model, persistence &amp; analytics test suite</span></div><button class="btn small" id="runTestsBtn">Run tests</button></div>
+    <div class="setrow"><div class="lbl"><b>Your data</b><span>Stored locally on this computer only</span></div>
+      <div class="row"><button class="btn small" id="exportBtn">Export JSON</button><button class="btn small danger" id="clearBtn">Erase all data</button></div></div>
+  </div>
+</section>
+
+</main>
+
+<div id="toasts"></div>
+<div id="modalRoot"></div>
+
+<script type="module">
+/* =====================================================================
+   INVIGI — real-time AI invigilator with adaptive on-device ML.
+   Sensing + ML run entirely in this browser. Persistence lives in
+   localStorage (works standalone on static hosting) or the optional
+   Python server. Nothing ever leaves the device.
+   ===================================================================== */
+
+/* ---------- utils ---------- */
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const clamp=(v,a,b)=>Math.min(b,Math.max(a,v));
+const smoothstep=(a,b,x)=>{const t=clamp((x-a)/(b-a||1e-6),0,1);return t*t*(3-2*t);};
+const fmtClock=ms=>{ms=Math.max(0,ms|0);const s=Math.floor(ms/1000),h=Math.floor(s/3600),m=Math.floor(s%3600/60),ss=s%60;
+  return h?`${h}:${String(m).padStart(2,"0")}:${String(ss).padStart(2,"0")}`:`${String(m).padStart(2,"0")}:${String(ss).padStart(2,"0")}`;};
+const fmtMin=ms=>{const m=Math.round(ms/60000);return m>=60?`${Math.floor(m/60)}h ${String(m%60).padStart(2,"0")}m`:`${m} min`;};
+const median=a=>{if(!a.length)return 0;const s=[...a].sort((x,y)=>x-y);return s[s.length>>1];};
+const varOf=a=>{ if(a.length<2) return 0; const m=a.reduce((s,x)=>s+x,0)/a.length;
+  return a.reduce((s,x)=>s+(x-m)*(x-m),0)/a.length; };
+const dayKey=d=>{const x=new Date(d);return `${x.getFullYear()}-${String(x.getMonth()+1).padStart(2,"0")}-${String(x.getDate()).padStart(2,"0")}`;};
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+const RAD2DEG=180/Math.PI;
+
+const ICONS={
+  play:'<path d="M8 5v14l11-7z" fill="currentColor" stroke="none"/>',
+  pause:'<path d="M7 5h4v14H7zM13 5h4v14h-4z" fill="currentColor" stroke="none"/>',
+  coffee:'<path d="M4 8h13v6a5 5 0 01-5 5H9a5 5 0 01-5-5zM17 9h2a2.5 2.5 0 010 5h-2M7 4v2M11 4v2"/>',
+  check:'<path d="M5 13l4 4L19 7"/>', x:'<path d="M6 6l12 12M18 6L6 18"/>',
+  info:'<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>',
+  spark:'<path d="M12 3v4M12 17v4M3 12h4M17 12h4M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8M5.6 18.4l2.8-2.8M15.6 8.4l2.8-2.8"/>',
+  flag:'<path d="M5 21V4m0 1h12l-2.5 4L17 13H5"/>', bell:'<path d="M6 9a6 6 0 1112 0c0 5 2 6 2 6H4s2-1 2-6M10 20a2 2 0 004 0"/>',
+};
+const I=(n,s=17)=>`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICONS[n]}</svg>`;
+
+/* ---------- persistence: optional Python server, else localStorage ---------- */
+const API={ ok:null,
+  async get(p){ const r=await fetch(p,{cache:"no-store"}); if(!r.ok) throw new Error(p); return r.json(); },
+  async post(p,body){ const r=await fetch(p,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body||{})}); if(!r.ok) throw new Error(p); return r.json(); }
+};
+const LS_SESS="invigi.sessions", LS_SET="invigi.settings", LS_ACTIVE="invigi.active";
+function lsSessions(){ try{ return JSON.parse(localStorage.getItem(LS_SESS)||"[]"); }catch{ return []; } }
+function lsSaveSessions(all){
+  try{ localStorage.setItem(LS_SESS,JSON.stringify(all)); }
+  catch(e){ try{ localStorage.setItem(LS_SESS,JSON.stringify(all.slice(Math.floor(all.length/4)))); }catch{} }
+}
+const Store={
+  async ping(){ if(API.ok!==null) return; try{ await Promise.race([API.get("/health"),new Promise((_,rj)=>setTimeout(()=>rj(new Error("timeout")),1500))]); API.ok=true; }catch{ API.ok=false; } },
+  async sessions(){ await this.ping(); if(API.ok){ try{ return (await API.get("/api/sessions")).sessions; }catch{ API.ok=false; } } return lsSessions(); },
+  async saveSession(rec){ await this.ping(); if(API.ok){ try{ return await API.post("/api/sessions",rec); }catch{ API.ok=false; } }
+    const all=lsSessions(); all.push(rec); lsSaveSessions(all); return {ok:true,where:"local"}; },
+  async deleteSession(id){ if(API.ok){ try{ await API.post("/api/sessions/delete",{id}); }catch{} }
+    lsSaveSessions(lsSessions().filter(r=>r.id!==id)); },
+  async settings(){ await this.ping(); if(API.ok){ try{ return (await API.get("/api/settings")).settings; }catch{ API.ok=false; } }
+    try{ return JSON.parse(localStorage.getItem(LS_SET)||"null"); }catch{ return null; } },
+  async saveSettings(){ if(API.ok){ try{ await API.post("/api/settings",{settings}); }catch{ API.ok=false; } }
+    try{ localStorage.setItem(LS_SET,JSON.stringify(settings)); }catch{} },
+  async analytics(){ await this.ping(); if(API.ok){ try{ return await API.get("/api/analytics"); }catch{ API.ok=false; } } return computeAnalyticsLocal(lsSessions()); },
+  async reset(){ if(API.ok){ try{ await API.post("/api/reset",{}); }catch{ API.ok=false; } }
+    try{ localStorage.removeItem(LS_SET); localStorage.removeItem(LS_SESS); localStorage.removeItem(LS_ACTIVE); }catch{} }
+};
+
+/* ---------- settings ---------- */
+const DEFAULTS={
+  theme:"light", cameraEnabled:true, micEnabled:true, phoneDetection:true, sensitivity:"balanced",
+  alertDelaySec:8, alertsEnabled:true, alertSound:"siren", alertVolume:80, alertCooldownSec:45,
+  browserNotifications:false, motivationEnabled:true, motivationThresholdSec:120, motivationRepeatSec:75,
+  awayGraceSec:8, awayDistractSec:18, distractHoldSec:4, gazeHoldSec:5, audioHoldSec:8, autoSave:true, v:5,
+  zones:[],
+  pomodoro:{enabled:false, focus:25, short:5, long:15, cycles:4},
+  adaptive:{ "looking-away":0, "looking-down":0, "talking":0, "movement":0 }
+};
+let settings=structuredClone(DEFAULTS);
+function mergeSettings(s){
+  settings={...DEFAULTS,...(s||{}),adaptive:{...DEFAULTS.adaptive,...((s||{}).adaptive||{})},
+    pomodoro:{...DEFAULTS.pomodoro,...((s||{}).pomodoro||{})},zones:Array.isArray((s||{}).zones)?s.zones.filter(z=>z&&isFinite(z.mx)):[]};
+  if((settings.v||1)<5){ settings.audioHoldSec=8; settings.v=5; Store.saveSettings(); }
+}
+const saveSettings=()=>Store.saveSettings();
+const SENS={strict:{gazePartial:9,gazeFull:20,T1:.28,T2:.52,alertMult:.7},
+            balanced:{gazePartial:12,gazeFull:26,T1:.34,T2:.58,alertMult:1},
+            relaxed:{gazePartial:17,gazeFull:34,T1:.42,T2:.66,alertMult:1.4}};
+
+/* ---------- clock ---------- */
+const realClock=()=>performance.now();
+class FakeClock{ constructor(){this.t=0;} now(){return this.t;} advance(ms){this.t+=ms;} }
+
+/* ---------- sound: one-shot presets + CONTINUOUS SIREN ---------- */
+const Sound={
+  ctx:null, master:null, _sirenOn:false, _so:null, _sg:null, _sl:null, _slg:null,
+  ensure(){ if(!this.ctx){ try{ this.ctx=new (window.AudioContext||window.webkitAudioContext)();
+      this.master=this.ctx.createGain(); this.master.gain.value=clamp(settings.alertVolume/100,0,1)*0.6;
+      this.master.connect(this.ctx.destination);}catch(e){} }
+    if(this.ctx&&this.ctx.state==="suspended") this.ctx.resume(); },
+  setVolume(v){ if(this.master) this.master.gain.value=clamp(v/100,0,1)*0.6; },
+  _seqs:{ chime:[[880,0,.24],[659.25,.17,.34]], ping:[[1318.5,0,.14]], pulse:[[523.25,0,.1],[523.25,.16,.1]],
+    phase:[[659.25,0,.16],[880,.16,.28]], motivation:[[523.25,0,.16],[659.25,.15,.16],[783.99,.3,.3]] },
+  play(preset,force){
+    if(preset!=="phase"&&!force){ if(!settings.alertsEnabled) return; if(settings.alertSound==="silent") return; }
+    this.ensure(); if(!this.ctx) return;
+    const seq=this._seqs[preset]||this._seqs.chime, t0=this.ctx.currentTime;
+    for(const [f,dt,dur] of seq){ const o=this.ctx.createOscillator(),g=this.ctx.createGain();
+      o.type="sine"; o.frequency.value=f; g.gain.setValueAtTime(0,t0+dt);
+      g.gain.linearRampToValueAtTime(.9,t0+dt+.015); g.gain.exponentialRampToValueAtTime(.001,t0+dt+dur);
+      o.connect(g); g.connect(this.master); o.start(t0+dt); o.stop(t0+dt+dur+.05); } },
+  /* Continuous siren: one oscillator + LFO pitch sweep. No timers, so it keeps
+     wailing even in a throttled background tab until stopSiren(). */
+  startSiren(){ if(this._sirenOn) return; this.ensure(); if(!this.ctx) return;
+    if(this.ctx.state==="suspended") this.ctx.resume();
+    const c=this.ctx; this._sirenOn=true;
+    this._so=c.createOscillator(); this._sg=c.createGain();
+    this._sl=c.createOscillator(); this._slg=c.createGain();
+    this._so.type="triangle"; this._so.frequency.value=760;
+    this._sl.type="sine"; this._sl.frequency.value=3.4; this._slg.gain.value=240;
+    this._sl.connect(this._slg); this._slg.connect(this._so.frequency);
+    this._sg.gain.setValueAtTime(0,c.currentTime);
+    this._sg.gain.linearRampToValueAtTime(.5,c.currentTime+.06);
+    this._so.connect(this._sg); this._sg.connect(this.master);
+    this._so.start(); this._sl.start(); },
+  stopSiren(){ if(!this._sirenOn) return; this._sirenOn=false;
+    if(!this.ctx) return;
+    const c=this.ctx, t=c.currentTime;
+    try{ this._sg.gain.cancelScheduledValues(t); this._sg.gain.setValueAtTime(this._sg.gain.value,t);
+      this._sg.gain.linearRampToValueAtTime(0,t+.12);
+      this._so.stop(t+.25); this._sl.stop(t+.25); }catch(e){} }
+};
+
+/* ---------- CameraService ---------- */
+class CameraService{
+  constructor(){ this.stream=null; this.active=false; this.video=null; }
+  async start(videoEl){
+    if(!navigator.mediaDevices?.getUserMedia) throw Object.assign(new Error("unsupported"),{name:"unsupported"});
+    this.video=videoEl;
+    this.stream=await navigator.mediaDevices.getUserMedia({video:{width:{ideal:640},height:{ideal:480},facingMode:"user"}});
+    videoEl.srcObject=this.stream; await videoEl.play(); this.active=true;
+    this.stream.getVideoTracks()[0].addEventListener("ended",()=>{this.active=false;App.onDeviceLost("camera");});
+  }
+  stop(){ this.stream?.getTracks().forEach(t=>t.stop()); this.stream=null; this.active=false; if(this.video)this.video.srcObject=null; }
+}
+
+/* =====================================================================
+   AudioService — non-content spectral analysis.
+   FIX v5: the old gate demanded speech-band ratio ≥0.42, which music and
+   video audio (bass-heavy, broad spectrum) never reached — so reels were
+   invisible. Now there are TWO features:
+     • loud : SNR above the adaptive noise floor (ANY sustained content)
+     • voiced : loud × voice-band dominance (speech-like spectrum)
+   activeSec accumulates on EITHER, with a 1.2 s forgiveness window so a
+   natural pause between sentences doesn't reset the counter. The engine
+   now has a dedicated audio path, so sustained sound can trigger alerts
+   on its own (previously it mathematically never could).
+   ===================================================================== */
+class AudioService{
+  constructor(){ this.ready=false; this.stream=null; this.ctx=null; this.analyser=null;
+    this.floor=0; this.talkingSec=0; this.activeSec=0; this.level=0;
+    this._lastSamp=0; this._lastActiveAt=0; }
+  async start(){
+    if(!navigator.mediaDevices?.getUserMedia) throw Object.assign(new Error("unsupported"),{name:"unsupported"});
+    this.stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}});
+    this.ctx=new (window.AudioContext||window.webkitAudioContext)();
+    if(this.ctx.state==="suspended") await this.ctx.resume();
+    const src=this.ctx.createMediaStreamSource(this.stream);
+    this.analyser=this.ctx.createAnalyser(); this.analyser.fftSize=2048; this.analyser.smoothingTimeConstant=.4;
+    src.connect(this.analyser); this.ready=true;
+    this.stream.getAudioTracks()[0].addEventListener("ended",()=>{this.ready=false;App.onDeviceLost("microphone");});
+  }
+  stop(){ this.stream?.getTracks().forEach(t=>t.stop()); if(this.ctx){try{this.ctx.close();}catch(e){}} this.ctx=null; this.ready=false;
+    this.talkingSec=0; this.activeSec=0; this.level=0; }
+  sample(nowMs){
+    if(!this.ready) return {level:0,talkingSec:0,activeSec:0};
+    const n=this.analyser.fftSize, td=new Float32Array(n), fd=new Float32Array(this.analyser.frequencyBinCount);
+    this.analyser.getFloatTimeDomainData(td); this.analyser.getFloatFrequencyData(fd);
+    let sum=0; for(let i=0;i<n;i++) sum+=td[i]*td[i];
+    const rms=Math.sqrt(sum/n); this.level=clamp(rms*9,0,1);
+    const binHz=this.ctx.sampleRate/this.analyser.fftSize;
+    let voicedE=0,totalE=0;
+    for(let i=1;i<fd.length;i++){ const f=i*binHz; if(f>8000) break; if(fd[i]<=-120) continue;
+      const e=Math.pow(10,fd[i]/10); totalE+=e; if(f>=85&&f<=3400) voicedE+=e; }
+    const bandRatio=totalE>0?voicedE/totalE:0;
+    if(this.floor===0) this.floor=rms;
+    this.floor = rms<this.floor ? rms : this.floor+0.00012;
+    const snr=rms/(this.floor+1e-7);
+    const loud=clamp((snr-1.8)/3.5,0,1);                    // any sustained content above ambient
+    const voiced=loud*clamp((bandRatio-0.30)/0.30,0,1);     // voice-like spectrum on top
+    const act=Math.max(loud*0.9,voiced);
+    const dt=this._lastSamp?Math.min(1000,nowMs-this._lastSamp):250; this._lastSamp=nowMs;
+    if(act>0.5){                                            // active: count up
+      this.activeSec=Math.min(600,this.activeSec+dt/1000);
+      this.talkingSec=Math.min(600,this.talkingSec+dt/1000);
+      this._lastActiveAt=nowMs;
+    }else if(nowMs-this._lastActiveAt>1200){                // 1.2 s forgiveness, then slow decay
+      this.activeSec=Math.max(0,this.activeSec-dt/1000*0.7);
+      this.talkingSec=Math.max(0,this.talkingSec-dt/1000*1.2);
+    }
+    return {level:this.level,talkingSec:this.talkingSec,activeSec:this.activeSec};
+  }
+}
+
+/* =====================================================================
+   VisionAnalyzer — face/iris landmarks + phone object detector + a
+   SECOND, self-built screen-flicker detector.
+   FIX v5: EfficientDet alone misses casually-held phones (webcam frames
+   are far off-distribution from COCO photos). The flicker analyzer
+   downsamples the frame to a 8×6 luminance grid, masks out the face,
+   and looks for cells whose brightness CHANGES over ~2.6 s the way a
+   scrolling screen does (std-dev high + brighter than room background).
+   A book doesn't flicker; a wall doesn't; scrolling reels absolutely do.
+   ===================================================================== */
+class VisionAnalyzer{
+  constructor(){ this.ready=false; this.landmarker=null; this.video=null;
+    this.detector=null; this.phoneReady=false; this._phone=null; this._lastOd=0; this._posUntil=0;
+    this._fc=null; this._fctx=null; this._grid=[]; this._flick={active:false,hot:0,sd:0,t:0};
+    this._flickOnUntil=0; this._lastFl=0; this._faceBox=null;
+    this.latest=null; this.lastPresentAt=0; this.lastVideoTime=-1; this.lastInfer=0;
+    this.running=false; this.fps=0; this._fpsT=0; this._fpsC=0;
+    this._buf={yaw:[],pitch:[],gx:[],gy:[]}; }
+  async init(onStage=()=>{}){
+    if(this.ready) return;
+    const CDN="https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14";
+    onStage("loading");
+    const mod=await import(`${CDN}/vision_bundle.mjs`);
+    const fileset=await mod.FilesetResolver.forVisionTasks(`${CDN}/wasm`);
+    const opts=delegate=>({ baseOptions:{ modelAssetPath:"https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task", delegate },
+      runningMode:"VIDEO", numFaces:1, outputFacialTransformationMatrixes:true,
+      minFaceDetectionConfidence:.5, minFacePresenceConfidence:.5, minTrackingConfidence:.5 });
+    onStage("gpu");
+    try{ this.landmarker=await mod.FaceLandmarker.createFromOptions(fileset,opts("GPU")); }
+    catch{ onStage("cpu"); this.landmarker=await mod.FaceLandmarker.createFromOptions(fileset,opts("CPU")); }
+    this.ready=true;
+    if(settings.phoneDetection!==false){
+      onStage("phone");
+      const od=delegate=>mod.ObjectDetector.createFromOptions(fileset,{
+        baseOptions:{modelAssetPath:"https://storage.googleapis.com/mediapipe-models/object_detector/efficientdet_lite0/float32/latest/efficientdet_lite0.tflite",delegate},
+        runningMode:"VIDEO",scoreThreshold:.20,maxResults:12});
+      try{ this.detector=await od("GPU"); this.phoneReady=true; }
+      catch{ try{ this.detector=await od("CPU"); this.phoneReady=true; }
+             catch{ this.detector=null; this.phoneReady=false; } }
+    }
+  }
+  attach(video){ this.video=video; }
+  start(){ this.running=true; const loop=()=>{ if(!this.running) return; this.pump(); requestAnimationFrame(loop); }; requestAnimationFrame(loop); }
+  stop(){ this.running=false; this.latest=null; this._buf={yaw:[],pitch:[],gx:[],gy:[]}; this._grid=[]; }
+  _med(k,v){ const b=this._buf[k]; b.push(v); if(b.length>5) b.shift(); return median(b); }
+  pump(){
+    if(!this.ready||!this.video||this.video.readyState<2) return;
+    const v=this.video, ts=performance.now();
+    if(v.currentTime===this.lastVideoTime) return;
+    this.lastVideoTime=v.currentTime;
+    if(ts-this.lastInfer<140) return;
+    this.lastInfer=ts;
+    this._fpsC++; if(ts-this._fpsT>2000){ this.fps=Math.round(this._fpsC*1000/(ts-this._fpsT)); this._fpsT=ts; this._fpsC=0; }
+    let r=null; try{ r=this.landmarker.detectForVideo(v,ts); }catch{ r=null; }
+    this._runPhone(v,ts);
+    this._runFlicker(v,ts);
+    const lm=r&&r.faceLandmarks?.[0];
+    if(!lm){ this._buf={yaw:[],pitch:[],gx:[],gy:[]}; this.latest={t:ts,present:false,phone:this._phone,flicker:this._flick}; return; }
+    const nose=lm[1], a=lm[234], b=lm[454];
+    const fw=Math.hypot(a.x-b.x,a.y-b.y)||.2;
+    const present=nose.x>-.15&&nose.x<1.15&&nose.y>-.15&&nose.y<1.15;
+    this._faceBox={nx:nose.x,ny:nose.y,fw,t:ts};           // fresh face box for the flicker mask
+    let yaw=0,pitch=0;
+    const d=r.facialTransformationMatrixes?.[0]?.data;
+    if(d){ yaw=Math.atan2(d[8],d[10]); pitch=Math.asin(clamp(-d[9],-1,1)); }
+    let gx=0,gy=0;
+    if(lm.length>=478){
+      const relX=e=>(lm[e.iris].x-(lm[e.outer].x+lm[e.inner].x)/2)/(Math.abs(lm[e.inner].x-lm[e.outer].x)+1e-6);
+      const relY=e=>(lm[e.iris].y-(lm[e.up].y+lm[e.low].y)/2)/(Math.abs(lm[e.low].y-lm[e.up].y)+1e-6);
+      const R={iris:468,outer:33,inner:133,up:159,low:145}, L={iris:473,outer:263,inner:362,up:386,low:374};
+      gx=(relX(R)+relX(L))/2; gy=(relY(R)+relY(L))/2;
+    }
+    yaw=this._med("yaw",yaw); pitch=this._med("pitch",pitch);
+    gx=this._med("gx",gx); gy=this._med("gy",gy);
+    if(present) this.lastPresentAt=ts;
+    this.latest={t:ts,present,yaw,pitch,gx,gy,nx:nose.x,ny:nose.y,fw,phone:this._phone,flicker:this._flick};
+  }
+  /* Object detector with wide capture + hysteresis + presence carry.
+     Enter at 0.30, hold at ≥0.20, stay "present" 2.5 s after losing it
+     (covers the phone rising to occlude the face). */
+  _runPhone(v,ts){
+    if(!this.detector||ts-this._lastOd<500) return;
+    this._lastOd=ts;
+    try{
+      const r=this.detector.detectForVideo(v,ts);
+      let best=0;
+      for(const det of (r.detections||[])){
+        const c=det.categories&&det.categories[0];
+        if(c&&c.score>best&&/phone/i.test(c.categoryName)) best=c.score;
+      }
+      if(best>=.30){ this._posUntil=ts+2500; this._phone={present:true,score:best,t:ts}; }
+      else if(best>=.20&&this._phone&&this._phone.present){ this._posUntil=ts+2500; this._phone={present:true,score:best,t:ts}; }
+      else if(ts<this._posUntil&&best>=.12){ this._phone={present:true,score:best,t:ts}; }
+      else this._phone={present:false,score:best,t:ts};
+    }catch(e){}
+  }
+  /* Screen-flicker detector: 8×6 luminance grid, face masked out.
+     A cell is "hot" when its brightness std-dev over ~2.6 s exceeds 20
+     AND it is brighter than the room median (screens glow). Two hot cells,
+     or one very hot cell (sd>38), means active screen content in view. */
+  _runFlicker(v,ts){
+    if(ts-this._lastFl<400) return;
+    this._lastFl=ts;
+    if(!this._fc){ this._fc=document.createElement('canvas'); this._fc.width=64; this._fc.height=48;
+      this._fctx=this._fc.getContext('2d',{willReadFrequently:true}); }
+    try{
+      this._fctx.drawImage(v,0,0,64,48);
+      const d=this._fctx.getImageData(0,0,64,48).data;
+      const cells=new Float32Array(48);
+      for(let cy=0;cy<6;cy++)for(let cx=0;cx<8;cx++){
+        let s=0;
+        for(let y=0;y<8;y++)for(let x=0;x<8;x++){
+          const px=((cy*8+y)*64+(cx*8+x))*4;
+          s+=0.2126*d[px]+0.7152*d[px+1]+0.0722*d[px+2];
+        }
+        cells[cy*8+cx]=s/64;
+      }
+      this._grid.push({cells,t:ts});
+      while(this._grid.length&&ts-this._grid[0].t>2600) this._grid.shift();
+      if(this._grid.length>=5){
+        const all=[]; for(const g of this._grid) for(const c of g.cells) all.push(c);
+        const med=median(all);
+        const fb=this._faceBox&&ts-this._faceBox.t<1200?this._faceBox:null;
+        let hot=0,bestSd=0;
+        for(let i=0;i<48;i++){
+          if(fb){ const cxN=((i%8)+.5)/8, cyN=(Math.floor(i/8)+.5)/6;
+            if(Math.abs(cxN-fb.nx)<fb.fw*.8&&Math.abs(cyN-fb.ny)<fb.fw*.8) continue; }
+          const series=this._grid.map(g=>g.cells[i]);
+          const sd=Math.sqrt(varOf(series));
+          if(sd>bestSd) bestSd=sd;
+          if(sd>20&&series[series.length-1]>med+12) hot++;
+        }
+        if(hot>=2||(hot>=1&&bestSd>38)) this._flickOnUntil=ts+2200;
+        this._flick={active:ts<this._flickOnUntil,hot,sd:+bestSd.toFixed(1),t:ts};
+      }
+    }catch(e){}
+  }
+}
+/* Fuse head pose + iris into deviation metrics (telemetry + cold start). */
+function gazeDeviation(s,base){
+  const yawDev=Math.abs(s.yaw-base.yaw)*RAD2DEG;
+  const raw=(s.pitch-base.pitch)*RAD2DEG;
+  const gx=s.gx-base.gx, gy=s.gy-base.gy;
+  const vert=Math.abs(raw)*(raw>0?.8:1)+Math.abs(gy)*(gy>0?.8:1)*95;
+  const horiz=yawDev+Math.abs(gx)*115;
+  return { deg:Math.max(horiz,vert), horiz, vert, dominant:horiz>=vert?"yaw":"pitch" };
+}
+
+/* =====================================================================
+   ZoneModel — the adaptive ML core (unchanged from v4).
+   Online 2-D Gaussian mixture over signed study angles; EMA learning;
+   membership ≤3σ; persisted as four centroids + spreads. No images.
+   ===================================================================== */
+class ZoneModel{
+  constructor(zones){
+    this.zones=(Array.isArray(zones)?zones:[]).slice(0,4)
+      .map(z=>({mx:+z.mx||0,my:+z.my||0,vx:Math.max(9,+z.vx||36),vy:Math.max(9,+z.vy||36),n:+z.n||1}));
+    this.assignR2=9;
+  }
+  best(h,v){ let out=null;
+    for(const z of this.zones){
+      const d2=(h-z.mx)*(h-z.mx)/z.vx+(v-z.my)*(v-z.my)/z.vy;
+      if(!out||d2<out.d2) out={d2,z};
+    }
+    return out;
+  }
+  observe(h,v){
+    const b=this.best(h,v);
+    if(b&&b.d2<=this.assignR2){
+      const z=b.z;
+      z.mx+=.06*(h-z.mx); z.my+=.06*(v-z.my);
+      z.vx=Math.max(9,z.vx+.05*((h-z.mx)*(h-z.mx)-z.vx));
+      z.vy=Math.max(9,z.vy+.05*((v-z.my)*(v-z.my)-z.vy));
+      z.n++;
+      return {known:true,sigma:Math.sqrt(b.d2)};
+    }
+    return {known:false,sigma:b?Math.sqrt(b.d2):Infinity};
+  }
+  form(h,v,vx=36,vy=36){
+    if(this.zones.length>=4) this._mergeTwoClosest();
+    this.zones.push({mx:h,my:v,vx:Math.max(9,vx),vy:Math.max(9,vy),n:8});
+    return this.zones.length;
+  }
+  teach(h,v){ const f=this.observe(h,v); if(!f.known) this.form(h,v); }
+  _mergeTwoClosest(){
+    let bi=0,bj=1,bd=Infinity;
+    for(let i=0;i<this.zones.length;i++)for(let j=i+1;j<this.zones.length;j++){
+      const a=this.zones[i],b=this.zones[j];
+      const d=(a.mx-b.mx)*(a.mx-b.mx)+(a.my-b.my)*(a.my-b.my);
+      if(d<bd){bd=d;bi=i;bj=j;}
+    }
+    const a=this.zones[bi],b=this.zones[bj],na=a.n+b.n;
+    const m={mx:(a.mx*a.n+b.mx*b.n)/na,my:(a.my*a.n+b.my*b.n)/na,
+      vx:Math.max(9,(a.vx*a.n+b.vx*b.n)/na),vy:Math.max(9,(a.vy*a.n+b.vy*b.n)/na),n:na};
+    this.zones=this.zones.filter((_,k)=>k!==bi&&k!==bj); this.zones.push(m);
+  }
+  serialize(){ return this.zones.map(z=>({mx:+z.mx.toFixed(2),my:+z.my.toFixed(2),
+    vx:+z.vx.toFixed(1),vy:+z.vy.toFixed(1),n:z.n})); }
+}
+
+/* ---------- AttentionEngine : reason-based temporal state machine ----------
+   FIX v5: new dedicated AUDIO path — sustained sound now triggers on its
+   own (previously audio could mathematically never reach the threshold). */
+class AttentionEngine{
+  constructor(params,onStateChange,onEpisodeEnd){
+    this.p=params; this.onStateChange=onStateChange; this.onEpisodeEnd=onEpisodeEnd;
+    this.state="focused"; this.candidate="focused"; this.candidateSince=0;
+    this.ema=0; this.episode=null; this.suppression={}; this.lastDominant="yaw"; this._reason="ema";
+  }
+  reset(){ this.state="focused"; this.candidate="focused"; this.candidateSince=0;
+    this.ema=0; this.episode=null; this._reason="ema"; }
+  tick(s,now){
+    const sup=this.suppression;
+    const g=(now<(sup["looking-away"]||0)||now<(sup["looking-down"]||0))?0:s.gaze;
+    const sp=(now<(sup["talking"]||0))?0:s.speech;
+    const mv=(now<(sup["movement"]||0))?0:s.move;
+    this.lastDominant=s.dominant||"yaw";
+    const inatt=clamp(.62*g+.45*s.absence+.5*sp+.25*mv,0,1);
+    this.ema=this.ema*.88+.12*inatt;
+    let cand,reason="ema";
+    if(!s.vision&&!s.audio){ cand="focused"; reason="none"; }
+    else if(s.absenceMs>=this.p.awayFullMs){ cand="distracted"; reason="absence"; }
+    else if(s.absenceFull>=.97){ cand="distracted"; reason="absence"; }
+    else if(s.absence>=.55){ cand="away"; reason="absence"; }
+    else if(s.phoneMs>=this.p.distractHoldMs){ cand="distracted"; reason="phone"; }
+    else if(s.gazeSustainedMs>=this.p.gazeHoldMs){ cand="distracted"; reason="gaze"; }
+    else if(s.audioSustainedMs>=this.p.audioHoldMs){ cand="distracted"; reason="audio"; }
+    else if(this.ema>=this.p.T2){ cand="distracted"; reason="ema"; }
+    else if(this.ema>=this.p.T1){ cand="possibly"; reason="ema"; }
+    else { cand="focused"; reason="ema"; }
+    this._reason=reason;
+    if(cand!==this.candidate){ this.candidate=cand; this.candidateSince=now; }
+    const held=now-this.candidateSince;
+    const need=cand==="distracted"
+      ?(reason==="absence"?2500:reason==="phone"?3000:reason==="gaze"?4000:reason==="audio"?5000:this.p.alertDelayMs)
+      :cand==="focused"?2000:cand==="away"?1500:2500;
+    const next=held>=need?cand:this.state;
+    if(next!==this.state) this._transition(next,now,s);
+    if(this.episode) this.episode.peak=Math.max(this.episode.peak,this.ema);
+    return {state:this.state,focusConf:1-this.ema,episode:this.episode};
+  }
+  _transition(next,now,s){
+    const prev=this.state; this.state=next;
+    if(prev==="distracted"&&this.episode){
+      const ep=this.episode; ep.durationMs=now-ep.startedAt; this.episode=null;
+      this.onEpisodeEnd&&this.onEpisodeEnd(ep);
+    }
+    if(next==="distracted") this.episode={type:this._classify(s),startedAt:now,peak:this.ema};
+    this.onStateChange&&this.onStateChange(next,prev,this.episode);
+  }
+  _classify(s){
+    if(this._reason==="phone") return "phone";
+    if(this._reason==="audio") return "audio";
+    if(this._reason==="gaze") return this.lastDominant==="pitch"?"looking-down":"looking-away";
+    if(s.absence>.6) return "away";
+    if(s.speech>=.7&&s.speech>=s.gaze) return "talking";
+    if(s.move>=.6&&s.move>s.gaze) return "movement";
+    return this.lastDominant==="pitch"?"looking-down":"looking-away";
+  }
+  override(now){
+    const raw=this.episode?this.episode.type:"looking-away";
+    const type=raw==="away"?"looking-away":raw;
+    this.suppression[type]=now+90000;
+    if(this.episode){ const ep=this.episode; ep.durationMs=now-ep.startedAt; ep.corrected=true;
+      this.episode=null; this.onEpisodeEnd&&this.onEpisodeEnd(ep); }
+    this.state="focused"; this.candidate="focused"; this.candidateSince=now; this.ema=.1;
+    this.onStateChange&&this.onStateChange("focused","distracted",null);
+    return type;
+  }
+}
+
+/* ---------- SessionEngine : deterministic, clock-injectable ---------- */
+const TRANS_OK={idle:["initializing"],initializing:["ready","idle"],ready:["studying","idle"],
+  studying:["paused","break","ended"],paused:["studying","break","ended"],break:["studying","paused","ended"],ended:[]};
+class SessionEngine{
+  constructor(clock=realClock){ this.now=clock; this.phase="idle"; }
+  can(to){ return TRANS_OK[this.phase]?.includes(to); }
+  to(to){ if(!this.can(to)) throw new Error(`illegal transition ${this.phase}→${to}`); this.phase=to; return true; }
+  hardReset(){ this.phase="idle"; }
+  start(cfg){
+    this.cfg=cfg; this.startWall=Date.now(); this.startPerf=this.now();
+    this.acc={focusedMs:0,distractedMs:0,possiblyMs:0,breakMs:0,pausedMs:0};
+    this.sub="focused"; this.events=[]; this.segments=[{s:"focused",t0:0,t1:0}];
+    this.lastTick=this.startPerf; this.goalNotified=false; this.record=null;
+    this.monitoring=cfg.monitoring||"timer-only";
+  }
+  setSub(sub){
+    if(this.phase==="paused") sub="paused";
+    if(this.phase==="break") sub="break";
+    if(!["studying","paused","break"].includes(this.phase)) return;
+    if(sub===this.sub) return;
+    this.sub=sub;
+    const n=this.now(), off=n-this.startPerf, last=this.segments[this.segments.length-1];
+    if(last&&last.s===sub) return;
+    if(last) last.t1=off;
+    this.segments.push({s:sub,t0:off,t1:off});
+  }
+  recordEvent(ev){ this.events.push({...ev,id:uid()}); }
+  tick(){
+    if(["idle","initializing","ready","ended"].includes(this.phase)) return;
+    const n=this.now(), dt=n-this.lastTick; this.lastTick=n;
+    if(dt<=0) return;
+    const last=this.segments[this.segments.length-1];
+    if(last) last.t1=n-this.startPerf;
+    if(this.phase==="paused"){ this.acc.pausedMs+=dt; return; }
+    if(this.phase==="break"){ this.acc.breakMs+=dt; return; }
+    if(this.sub==="distracted") this.acc.distractedMs+=dt;
+    else if(this.sub==="possibly"||this.sub==="away") this.acc.possiblyMs+=dt;
+    else this.acc.focusedMs+=dt;
+  }
+  studyMs(){ return this.acc.focusedMs+this.acc.possiblyMs+this.acc.distractedMs; }
+  focusScore(){
+    const pos=this.acc.focusedMs+.5*this.acc.possiblyMs, tot=pos+this.acc.distractedMs;
+    if(tot<30000) return null;
+    return Math.round(pos/tot*100);
+  }
+  stop(){
+    this.tick();
+    if(this.phase!=="ended") this.to("ended");
+    const study=this.studyMs(), score=this.focusScore();
+    const longest=this.events.reduce((m,e)=>Math.max(m,e.durationMs),0);
+    this.record={
+      id:uid(), date:new Date(this.startWall).toISOString(), day:dayKey(this.startWall),
+      startClock:new Date(this.startWall).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"}),
+      endClock:new Date().toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"}),
+      subject:this.cfg.subject||"", task:this.cfg.task||"", target:this.cfg.target||"",
+      goalMinutes:this.cfg.goalMinutes, durations:{...this.acc}, studyMs:study,
+      events:this.events, segments:this.segments, focusScore:score,
+      longestDistractionMs:longest, goalMet:study>=this.cfg.goalMinutes*60000||!!this.cfg.goalForced,
+      mode:this.cfg.pomodoro?"pomodoro":"focus", monitoring:this.monitoring,
+      corrections:this.events.filter(e=>e.corrected).length
+    };
+    return this.record;
+  }
+}
+
+/* ---------- Alert / Motivation engines ---------- */
+class AlertEngine{
+  constructor(){ this.last={alert:0,motivation:0,phase:0,notify:0}; this.onFire=null; }
+  reset(){ this.last={alert:0,motivation:0,phase:0,notify:0}; }
+  tryFire(kind,now,message){
+    const cd=kind==="alert"?settings.alertCooldownSec*1000:kind==="phase"?2000:1000;
+    if(now-this.last[kind]<cd) return false;
+    this.last[kind]=now;
+    if(kind==="phase") Sound.play("phase");
+    else if(kind==="motivation") Sound.play("motivation");
+    this.onFire&&this.onFire(kind,message);
+    if((kind==="alert"||kind==="motivation")&&settings.browserNotifications&&
+       typeof Notification!=="undefined"&&Notification.permission==="granted"&&now-this.last.notify>60000){
+      try{ new Notification("Invigi — focus check",{body:message||"Attention appears directed away from your study area."}); this.last.notify=now; }catch(e){}
+    }
+    return true;
+  }
+}
+class MotivationEngine{
+  static MESSAGES=[
+    "Two minutes gone. Get back to your goal.",
+    "Your future self will thank you for finishing this session.",
+    "You don't need motivation. You need the next ten focused minutes.",
+    "Close the distraction and get back to the page.",
+    "The work you're avoiding is the work that counts.",
+    "One page. One problem. Start there.",
+    "This is the exact moment study sessions are won or lost.",
+    "Return now — the hardest part is starting again.",
+    "Don't let five minutes of drift undo twenty of focus.",
+    "Back to the desk. The distraction will still be there later."
+  ];
+  constructor(){ this.bag=[]; }
+  next(){ if(!this.bag.length) this.bag=[...MotivationEngine.MESSAGES].sort(()=>Math.random()-.5);
+    return this.bag.pop(); }
+}
+const motivationDue=(startedAt,lastAt,now,p)=>
+  now-startedAt>=p.motivationMs && now-lastAt>=p.motivationRepeatMs;
+
+/* ---------- attention ribbon ---------- */
+const STATE_COLORS={focused:"#2F6B4F",possibly:"#A6721B",distracted:"#B23A2A",away:"#C4674F",
+  break:"#8B8677",paused:"#B5B0A0",calibrating:"#C8A45C",unobserved:"#9B9687"};
+function drawRibbon(canvas,segments,totalMs,liveNow){
+  if(!canvas) return;
+  const dpr=Math.min(2,window.devicePixelRatio||1);
+  const W=canvas.clientWidth||800, H=canvas.clientHeight||58;
+  if(!W||!H) return;
+  const bw=Math.round(W*dpr), bh=Math.round(H*dpr);
+  if(canvas.width!==bw||canvas.height!==bh){ canvas.width=bw; canvas.height=bh; }
+  const ctx=canvas.getContext("2d");
+  ctx.setTransform(dpr,0,0,dpr,0,0); ctx.clearRect(0,0,W,H);
+  const span=Math.max(totalMs,1000), x=t=>t/span*W;
+  if(!segments.length){ ctx.fillStyle=STATE_COLORS.paused; ctx.fillRect(0,H/2-3,W,6); return; }
+  for(const s of segments){ ctx.fillStyle=STATE_COLORS[s.s]||"#999";
+    const x0=x(s.t0), x1=Math.max(x0+1.5,x(s.t1));
+    ctx.fillRect(x0,H/2-9,x1-x0,18); }
+  ctx.fillStyle="rgba(128,124,110,.55)";
+  for(let m=5;m*60000<span;m+=5){ ctx.fillRect(x(m*60000),H/2+11,1,5); }
+  for(let m=15;m*60000<span;m+=15){ ctx.fillRect(x(m*60000),2,1,6); }
+  if(liveNow!=null){ ctx.fillStyle="#1F1D18"; ctx.fillRect(x(liveNow)-1,0,2,H); }
+}
+
+/* ---------- charts ---------- */
+function barChart(items,{h=150}={}){
+  if(!items.length) return `<p class="hint">No sessions yet — your charts will build themselves as you study.</p>`;
+  const max=Math.max(...items.map(i=>i.value),1), W=items.length*46+20;
+  let bars="";
+  items.forEach((it,i)=>{ const bh=Math.max(it.value>0?4:2,it.value/max*(h-30));
+    bars+=`<rect x="${20+i*46}" y="${h-24-bh}" width="26" height="${bh}" rx="4" fill="var(--accent)" ${it.value===0?'opacity=".25"':""}/>
+      <text x="${33+i*46}" y="${h-8}" text-anchor="middle" font-size="10" fill="var(--muted)" font-family="Spline Sans Mono">${it.label}</text>
+      ${it.value?`<text x="${33+i*46}" y="${h-30-bh}" text-anchor="middle" font-size="10" fill="var(--muted)" font-family="Spline Sans Mono">${Math.round(it.value)}</text>`:""}`; });
+  return `<svg class="chart" viewBox="0 0 ${W} ${h}" style="max-width:${W}px">${bars}</svg>`;
+}
+function lineChart(points){
+  if(points.length<2) return `<p class="hint">Complete at least two monitored sessions to see a trend line.</p>`;
+  const W=560,H=170,pad=30;
+  const xs=points.map(p=>p.x), x0=Math.min(...xs), x1=Math.max(...xs);
+  const X=v=>pad+(v-x0)/((x1-x0)||1)*(W-pad*2), Y=v=>H-pad-clamp(v,0,100)/100*(H-pad*2-10);
+  const n=points.length; let sx=0,sy=0,sxy=0,sx2=0;
+  points.forEach(p=>{sx+=p.x;sy+=p.y;sxy+=p.x*p.y;sx2+=p.x*p.x;});
+  const slope=(n*sxy-sx*sy)/((n*sx2-sx*sx)||1), icpt=(sy-slope*sx)/n;
+  const path=points.map((p,i)=>`${i?"L":"M"}${X(p.x).toFixed(1)},${Y(p.y).toFixed(1)}`).join(" ");
+  const fit=`M${X(x0)},${Y(clamp(icpt+slope*x0,0,100))} L${X(x1)},${Y(clamp(icpt+slope*x1,0,100))}`;
+  const dots=points.map(p=>`<circle cx="${X(p.x)}" cy="${Y(p.y)}" r="4" fill="var(--accent)"/>`).join("");
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}">
+    <line x1="${pad}" y1="${Y(0)}" x2="${W-pad}" y2="${Y(0)}" stroke="var(--line)"/>
+    <line x1="${pad}" y1="${Y(50)}" x2="${W-pad}" y2="${Y(50)}" stroke="var(--line)" stroke-dasharray="4 5"/>
+    <path d="${fit}" stroke="var(--amber)" stroke-width="2" stroke-dasharray="6 5" fill="none"/>
+    <path d="${path}" stroke="var(--accent)" stroke-width="2" fill="none"/>${dots}</svg>`;
+}
+
+/* ---------- pure analytics ---------- */
+function aggregateDaily(recs){
+  const map={};
+  for(const r of recs){ const k=r.day||dayKey(r.date); map[k]??={studyMs:0,focusedMs:0,distractedMs:0,sessions:0,scoreSum:0,scoreN:0};
+    map[k].studyMs+=r.studyMs||0; map[k].focusedMs+=(r.durations.focusedMs||0)+(r.durations.possiblyMs||0);
+    map[k].distractedMs+=r.durations.distractedMs||0; map[k].sessions++;
+    if(r.focusScore!=null){ map[k].scoreSum+=r.focusScore; map[k].scoreN++; } }
+  return map;
+}
+function aggregateWeekly(recs,now=Date.now()){
+  const week=recs.filter(r=>now-new Date(r.date).getTime()<7*864e5);
+  const scores=week.filter(r=>r.focusScore!=null);
+  return { studyHours:week.reduce((a,r)=>a+(r.studyMs||0),0)/36e5, sessions:week.length,
+    avgScore:scores.length?Math.round(scores.reduce((a,r)=>a+r.focusScore,0)/scores.length):null,
+    longestMs:week.reduce((m,r)=>Math.max(m,r.studyMs||0),0) };
+}
+function mostProductiveDay(recs){
+  const names=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"], totals={};
+  for(const r of recs){ const d=names[new Date(r.date).getDay()]; totals[d]=(totals[d]||0)+((r.durations.focusedMs||0)+(r.durations.possiblyMs||0)); }
+  let best=null,bv=0; for(const d in totals) if(totals[d]>bv){bv=totals[d];best=d;}
+  return best?{day:best,focusedMs:bv}:null;
+}
+function trendSlope(scores){
+  const n=scores.length; if(n<2) return null;
+  let sx=0,sy=0,sxy=0,sx2=0;
+  scores.forEach((y,x)=>{sx+=x;sy+=y;sxy+=x*y;sx2+=x*x;});
+  return (n*sxy-sx*sy)/((n*sx2-sx*sx)||1);
+}
+function computeAnalyticsLocal(recs){
+  const map=aggregateDaily(recs);
+  const daily=[]; for(let i=13;i>=0;i--){ const d=new Date(Date.now()-i*864e5), k=dayKey(d), m=map[k];
+    daily.push({label:String(d.getDate()),study_ms:m?m.studyMs:0,focused_ms:m?m.focusedMs:0,
+      distracted_ms:m?m.distractedMs:0,sessions:m?m.sessions:0,
+      avg_score:m&&m.scoreN?Math.round(m.scoreSum/m.scoreN):null}); }
+  const w=aggregateWeekly(recs);
+  const scored=recs.filter(r=>r.focusScore!=null).slice(-12);
+  return { daily, weekly:{study_hours:w.studyHours,sessions:w.sessions,avg_score:w.avgScore,longest_ms:w.longestMs},
+    productive_day:mostProductiveDay(recs),
+    trend:{slope:trendSlope(scored.map(r=>r.focusScore)),n:scored.length,
+      points:scored.map(r=>({x:new Date(r.date).getTime(),y:r.focusScore}))} };
+}
+
+/* ---------- App / Monitor orchestration ---------- */
+const App={
+  phase:"idle", session:new SessionEngine(), camera:new CameraService(),
+  audio:new AudioService(), vision:new VisionAnalyzer(), alertEng:new AlertEngine(),
+  motiv:new MotivationEngine(), engine:null, ribbonCanvas:null,
+  zones:null,
+  monTimer:null, calib:null, lastMotivAt:0, effCam:false, effMic:false, _mv:[],
+  _unfamiliarFrom:0, _phoneFrom:0, _bowFrom:0, _flickFrom:0, _zoneForm:null, _eyeHist:[], _lastHV:null,
+  _zonesFormed:0, _zoneBudget:3, _formTicks:14, _firstSession:false, _graceUntil:0, telemetry:null,
+  pomoCycle:1, pomoPhase:"focus", phaseEnd:0, _pausedAt:0,
+  _alertActive:false, _sirenAllowedFrom:0, _lastLoopPlay:0,
+
+  monitoringLabel(){
+    if(this.phase!=="studying") return {t:this.phase==="paused"?"Paused":this.phase==="break"?"On break":"Not monitoring",d:"paused"};
+    const v=this.effCam&&this.vision.ready, a=this.effMic&&this.audio.ready;
+    if(v&&a) return {t:"AI monitoring active · vision + audio",d:"vision+audio"};
+    if(v) return {t:"AI monitoring active · vision only",d:"vision"};
+    if(a) return {t:"Monitoring · audio only",d:"audio"};
+    return {t:"Focus timer only (no monitoring)",d:"off"};
+  },
+  setChip(){ const m=this.monitoringLabel();
+    $("#chipText").textContent=m.t;
+    $("#chipDot").className="dot "+(m.d==="vision+audio"||m.d==="vision"||m.d==="audio"?"live pulse":m.d==="off"&&this.phase==="studying"?"warn":""); },
+  onDeviceLost(kind){ toast(`${kind==="camera"?"Camera":"Microphone"} was disconnected. Continuing in a reduced mode.`,"info"); this.setChip(); },
+
+  persistZones(){ if(!this.zones) return; settings.zones=this.zones.serialize(); saveSettings(); },
+  resetSignalState(){
+    this._unfamiliarFrom=0; this._phoneFrom=0; this._bowFrom=0; this._flickFrom=0; this._zoneForm=null;
+    if(this.engine) this.engine.reset();
+  },
+
+  alertStart(){ if(this._alertActive) return; this._alertActive=true;
+    if(settings.alertsEnabled&&settings.alertSound==="siren") Sound.startSiren(); },
+  alertStop(){ if(!this._alertActive) return; this._alertActive=false;
+    Sound.stopSiren(); this._lastLoopPlay=0; },
+  userStopSiren(){ this.alertStop();
+    this._sirenAllowedFrom=performance.now()+settings.alertCooldownSec*1000;
+    toast(`Siren stopped. If the distraction continues, it sounds again in ${settings.alertCooldownSec} s.`,"info"); },
+
+  /* ---------- init: real permissions + models, honest checklist ---------- */
+  async beginSession(cfg){
+    if(this.phase==="studying") return;
+    this.phase="initializing";
+    if(this.session.phase!=="idle") this.session.hardReset();
+    this.session.to("initializing");
+    this.setChip();
+    $("#initPanel").hidden=false; $("#startErr").textContent="";
+    const setItem=(id,cls,txt)=>{ const el=$(id); el.className="initItem "+cls;
+      el.querySelector(".st").textContent=txt;
+      el.querySelector(".dot").className="dot "+(cls==="ok"?"live":cls==="err"?"err":cls==="warn"?"warn":"pulse"); };
+    const mark=(id,txt)=>setItem(id,"",txt), ok=(id,txt)=>setItem(id,"ok",txt),
+          err=(id,txt)=>setItem(id,"err",txt), warn=(id,txt)=>setItem(id,"warn",txt);
+
+    let visionOK=false;
+    if(cfg.wantCam){
+      mark("#stModel","Loading AI models…");
+      try{ await this.vision.init(s=>{ if(s==="cpu") mark("#stModel","GPU unavailable — using CPU…");
+        else if(s==="phone") mark("#stModel","Loading phone detector…"); });
+        ok("#stModel","Loaded"+(this.vision.phoneReady?" · phone detector on":" · flicker detector only"));
+        visionOK=true;
+      }catch(e){ err("#stModel","Failed to load"); warn("#stCam","Skipped — model unavailable"); setItem("#stMic","",""); }
+    } else { setItem("#stModel","","Skipped — camera monitoring off"); setItem("#stCam","","Skipped"); }
+
+    let camOK=false;
+    if(cfg.wantCam&&visionOK){
+      mark("#stCam","Requesting permission…");
+      try{ await this.camera.start($("#camVideo")); this.vision.attach($("#camVideo")); ok("#stCam","Active"); camOK=true; }
+      catch(e){
+        const map={NotAllowedError:"Permission denied",NotFoundError:"No camera found",
+          NotReadableError:"Camera is in use by another app",unsupported:"Browser does not support camera access"};
+        err("#stCam",map[e.name]||"Unavailable");
+      }
+    }
+    if(cfg.wantCam&&!visionOK) this.camera.stop();
+
+    let micOK=false;
+    if(cfg.wantMic){
+      mark("#stMic","Requesting permission…");
+      try{ await this.audio.start(); ok("#stMic","Active"); micOK=true; }
+      catch(e){
+        const map={NotAllowedError:"Permission denied",NotFoundError:"No microphone found",
+          NotReadableError:"Microphone is in use",unsupported:"Browser does not support audio input"};
+        err("#stMic",map[e.name]||"Unavailable");
+      }
+    } else setItem("#stMic","","Skipped — microphone monitoring off");
+
+    this.effCam=camOK; this.effMic=micOK;
+    const mode=camOK&&micOK?"vision+audio":camOK?"vision":micOK?"audio":"timer-only";
+    if(camOK&&!micOK) toast("Microphone unavailable. Continuing with camera-based monitoring.","info");
+    if(!camOK&&micOK) toast("Camera unavailable. Continuing with audio-based monitoring.","info");
+    if(!camOK&&!micOK) toast("No monitoring available — running as a focus timer only.","info");
+    if(micOK) this.audio.sample(performance.now());
+    if(mode!=="timer-only") ok("#stReady",`AI monitoring ready · ${mode} · adaptive zones`);
+    else setItem("#stReady","warn","Ready · timer-only mode");
+
+    const sens=SENS[settings.sensitivity];
+    const adaptiveBonus=Math.min(8,(settings.adaptive["looking-away"]+settings.adaptive["looking-down"])*2);
+    this.engine=new AttentionEngine({
+      T1:sens.T1,T2:sens.T2,gazePartial:sens.gazePartial,gazeFull:sens.gazeFull,
+      alertDelayMs:Math.round(settings.alertDelaySec*sens.alertMult*1000),
+      awayGraceMs:settings.awayGraceSec*1000,awayFullMs:settings.awayDistractSec*1000,
+      distractHoldMs:settings.distractHoldSec*1000,gazeHoldMs:settings.gazeHoldSec*1000,
+      audioHoldMs:settings.audioHoldSec*1000,
+      adaptiveBonus, motivationMs:settings.motivationThresholdSec*1000,
+      motivationRepeatMs:settings.motivationRepeatSec*1000
+    },(next,prev)=>this.onSubStateChange(next,prev),ep=>this.onEpisodeEnd(ep));
+    this.alertEng.onFire=(kind,msg)=>{ if(kind==="alert") this.showAlert(msg||"Stay focused — your attention appears directed away from your study area.");
+      else if(kind==="motivation") this.showAlert(msg,true);
+      else toast(msg,"info"); };
+
+    this.session.to("ready");
+    this.session.start({...cfg,monitoring:mode,pomodoro:cfg.pomodoro});
+    this.session.to("studying");
+
+    this.zones=new ZoneModel(settings.zones);
+    this._firstSession=!(settings.zones&&settings.zones.length);
+    this._zoneBudget=this._firstSession?4:3;
+    this._formTicks=this._firstSession?10:14;
+    $("#firstHint").classList.toggle("on",this._firstSession);
+
+    this.pomoCycle=1; this.pomoPhase="focus"; this.phaseEnd=0;
+    if(cfg.pomodoro) this.startPomoPhase("focus");
+    this.phase="studying"; this.lastMotivAt=0; this.calib=null; this._mv=[];
+    this._zonesFormed=0; this.telemetry=null; this._eyeHist=[]; this._lastHV=null;
+    this.resetSignalState(); this._graceUntil=0;
+    this._alertActive=false; this._sirenAllowedFrom=0; this._lastLoopPlay=0;
+    this.vision.start(); this.alertEng.reset();
+    Sound.ensure();
+    this.startMonitor();
+    this.showView("session"); this.setChip(); saveActiveSnapshot(this.session,cfg,mode);
+    UI.session.enter(cfg);
+  },
+
+  onSubStateChange(next){
+    if(this.session.phase==="studying") this.session.setSub(next);
+    if(next==="distracted"){
+      const type=this.engine?.episode?.type;
+      const msg=type==="phone"?"Phone detected in your study area — park it face-down and come back to the work."
+        :type==="audio"?"Sustained media or conversation sound detected — use headphones or quiet the room."
+        :type==="talking"?"Extended conversation detected — bring your attention back to studying."
+        :type==="away"?"You've stepped away from your desk — the session clock is still running."
+        :"Stay focused — your attention appears directed away from your study area.";
+      this.alertEng.tryFire("alert",performance.now(),msg);
+      UI.session.showOverride(true);
+    }
+    if(next==="focused"){ UI.session.hideAlert(); UI.session.showOverride(false); this.lastMotivAt=0; }
+  },
+  onEpisodeEnd(ep){
+    this.session.recordEvent({ type:ep.type, startOffsetMs:Math.max(0,ep.startedAt-this.session.startPerf),
+      durationMs:ep.durationMs||0, peakConf:+ep.peak.toFixed(2), corrected:!!ep.corrected,
+      severity:(ep.peak>=.8||ep.durationMs>=120000)?"high":ep.peak>=.65?"medium":"low" });
+  },
+  showAlert(msg,isMotivation){
+    $("#alertMsg").textContent=msg;
+    $("#alertBanner").classList.add("on");
+    if(isMotivation) toast(msg,"spark");
+  },
+
+  startMonitor(){ clearInterval(this.monTimer); this.monTimer=setInterval(()=>this.tickMonitor(),250); },
+  tickMonitor(){
+    const s=this.session;
+    if(["idle","initializing","ready","ended"].includes(s.phase)) return;
+    const now=realClock(); s.tick();
+
+    if(s.cfg?.pomodoro && s.phase!=="paused"){
+      if(now>=this.phaseEnd) this.advancePomodoro(now);
+      if(this.pomoPhase!=="focus" && ["break","paused","ended"].includes(s.phase)){
+        if(s.phase==="break") s.setSub("break");
+        this.updateSessionUI(now,0,null,false);
+        saveActiveSnapshot(s,s.cfg,s.monitoring);
+        return;
+      }
+    }
+    if(s.phase!=="studying"){ this.updateSessionUI(now,0,null,false); return; }
+
+    if(!s.goalNotified&&s.studyMs()>=s.cfg.goalMinutes*60000){ s.goalNotified=true;
+      Sound.play("phase"); toast("Goal reached — finish your thought, then end whenever you're ready.","flag"); }
+
+    if(document.hidden){ s.setSub("unobserved"); this.updateSessionUI(now,0,null,false); saveActiveSnapshot(s,s.cfg,s.monitoring); return; }
+
+    const vs=this.vision.latest;
+    const visFresh=this.effCam&&this.vision.ready&&vs&&(now-vs.t)<1500;
+    const audio=this.effMic?this.audio.sample(now):null;
+    const audFresh=this.effMic&&this.audio.ready;
+
+    let sample={gaze:0,absence:0,absenceFull:0,absenceMs:0,gazeSustainedMs:0,phoneMs:0,audioSustainedMs:0,
+      speech:0,move:0,dominant:"yaw",vision:visFresh,audio:audFresh};
+    this.telemetry=null;
+    if(visFresh){
+      if(!this.calib) this.calib={start:now,samples:[],_hs:[],_vs:[]};
+      if(this.calib.samples){
+        if(now-this.calib.start<8000){
+          if(vs.present) this.calib.samples.push(vs);
+          s.setSub("calibrating"); this.updateSessionUI(now,audio?audio.level:0,vs,visFresh); return; }
+        const b=this.calib.samples.length>=5?{
+          yaw:median(this.calib.samples.map(x=>x.yaw)), pitch:median(this.calib.samples.map(x=>x.pitch)),
+          gx:median(this.calib.samples.map(x=>x.gx)), gy:median(this.calib.samples.map(x=>x.gy))}
+          :{yaw:0,pitch:0,gx:0,gy:0};
+        this.calib.base=b; this.calib.samples=null;
+        if(this.zones&&this.zones.zones.length===0){
+          const vx=clamp(varOf(this.calib._hs)*1.3,16,100), vy=clamp(varOf(this.calib._vs)*1.3,16,100);
+          this.zones.form(0,0,vx,vy);
+          this.persistZones();
+          toast("Learned your screen position as your first study zone.","check");
+        }
+        this._graceUntil=now+(this._firstSession?20000:12000);
+        s.setSub(this.engine.state||"focused");
+      }
+      const b=this.calib.base||{yaw:0,pitch:0,gx:0,gy:0};
+      /* fused device signal: object detector OR flicker analyzer */
+      const odScore=vs.phone?vs.phone.score:0;
+      const odOn=!!(vs.phone&&vs.phone.present);
+      const fl=vs.flicker&&vs.flicker.active;
+      if(fl){ if(!this._flickFrom) this._flickFrom=now; } else this._flickFrom=0;
+      const flickMs=this._flickFrom?now-this._flickFrom:0;
+      const deviceOn=odOn||(fl&&odScore>=.12)||flickMs>=7000;
+      const deviceSrc=odOn?"od":(fl?"screen":"—");
+
+      if(vs.present){
+        const dev=gazeDeviation(vs,b);
+        const hS=((vs.yaw-b.yaw)*RAD2DEG)+((vs.gx-b.gx)*115);
+        const vS=((vs.pitch-b.pitch)*RAD2DEG)+((vs.gy-b.gy)*95);
+        this._lastHV={h:hS,v:vS};
+        this.calib._hs.push(hS); this.calib._vs.push(vS);
+        if(this.calib._hs.length>40){ this.calib._hs.shift(); this.calib._vs.shift(); }
+        const obs=this.zones?this.zones.observe(hS,vS):{known:true,sigma:0};
+
+        this._eyeHist.push({gx:vs.gx,gy:vs.gy,nx:vs.nx,ny:vs.ny});
+        while(this._eyeHist.length>12) this._eyeHist.shift();
+        const eyeVar=varOf(this._eyeHist.map(x=>x.gx))+varOf(this._eyeHist.map(x=>x.gy));
+        const headVar=varOf(this._eyeHist.map(x=>x.nx))+varOf(this._eyeHist.map(x=>x.ny));
+        const eng=smoothstep(.25,.6,clamp(eyeVar*380+headVar*900,0,1));
+
+        const unfamiliar=!obs.known;
+        if(unfamiliar){
+          if(!this._zoneForm||Math.hypot(hS-this._zoneForm.h,vS-this._zoneForm.v)>8)
+            this._zoneForm={h:hS,v:vS,n:0,t0:now};
+          this._zoneForm.n++;
+          if(this._zoneForm.n>=this._formTicks&&!deviceOn&&this._zonesFormed<this._zoneBudget){
+            this.zones.form(hS,vS); this._zonesFormed++; this._zoneForm=null;
+            this.persistZones();
+            toast(`Learned a new study area (${this.zones.zones.length} zones total). Looking there won't be flagged again.`,"check");
+          }
+        } else this._zoneForm=null;
+
+        if(unfamiliar&&!deviceOn&&!this._zoneForm&&eng<.5){
+          if(!this._unfamiliarFrom) this._unfamiliarFrom=now;
+        } else this._unfamiliarFrom=0;
+        sample.gazeSustainedMs=(this._unfamiliarFrom&&now>=this._graceUntil)?now-this._unfamiliarFrom:0;
+
+        const sig=obs.sigma===Infinity?dev.deg/5:obs.sigma;
+        sample.gaze=smoothstep(2.6,5.2,sig)*(obs.known?.5:1);
+        sample.dominant=dev.dominant;
+
+        this._mv.push({t:now,x:vs.nx,y:vs.ny,w:vs.fw});
+        while(this._mv.length&&now-this._mv[0].t>5000) this._mv.shift();
+        let disp=0; for(let i=1;i<this._mv.length;i++){ const a=this._mv[i-1],c=this._mv[i];
+          disp+=Math.hypot(c.x-a.x,c.y-a.y)/(a.w||.2)/((c.t-a.t)/1000||1); }
+        sample.move=smoothstep(.55,1.5,this._mv.length>2?disp/(this._mv.length-1):0);
+
+        if(deviceOn){ if(!this._phoneFrom) this._phoneFrom=now; } else this._phoneFrom=0;
+        sample.phoneMs=this._phoneFrom?now-this._phoneFrom:0;
+        if(!sample.phoneMs&&!this.vision.phoneReady&&dev.vert>20&&eng<.45){
+          if(!this._bowFrom) this._bowFrom=now;
+        } else if(!deviceOn) this._bowFrom=0;
+        if(!sample.phoneMs&&this._bowFrom) sample.phoneMs=now-this._bowFrom;
+
+        this.telemetry={deg:dev.deg,zones:this.zones?this.zones.zones.length:0,
+          eng:Math.round(eng*100),phone:deviceOn,phoneScore:odScore,src:deviceSrc,
+          flick:fl?Math.round(vs.flicker.sd):0,bow:sample.phoneMs&&!deviceOn?sample.phoneMs:0};
+      }else{
+        /* face lost: if a device was just in view, keep the phone timer running
+           (occlusion carry) — this is how "phone hides face" becomes "phone". */
+        this._unfamiliarFrom=0; this._zoneForm=null; this._eyeHist=[];
+        const awayMs=now-this.vision.lastPresentAt;
+        if(deviceOn&&awayMs<4000){
+          if(!this._phoneFrom) this._phoneFrom=now;
+          sample.phoneMs=now-this._phoneFrom;
+        } else { this._phoneFrom=0; this._bowFrom=0; this._flickFrom=0; }
+        sample.absenceMs=awayMs;
+        sample.absence=smoothstep(this.engine.p.awayGraceMs,this.engine.p.awayFullMs,awayMs);
+        sample.absenceFull=smoothstep(this.engine.p.awayFullMs,this.engine.p.awayFullMs+4000,awayMs);
+        this.telemetry={away:awayMs,phone:deviceOn,phoneScore:odScore,src:deviceSrc};
+      }
+    } else { this._unfamiliarFrom=0; this._phoneFrom=0; this._bowFrom=0; this._flickFrom=0; this._zoneForm=null; }
+    if(audFresh&&audio){
+      sample.speech=smoothstep(5000,10000,audio.talkingSec);
+      sample.audioSustainedMs=Math.min(600000,audio.activeSec*1000);
+    }
+
+    const res=this.engine.tick(sample,now);
+
+    /* siren loop: non-stop while distracted, silent the moment you return */
+    if(res.state==="distracted"){
+      if(settings.alertsEnabled&&settings.alertSound!=="silent"&&now>=this._sirenAllowedFrom){
+        this.alertStart();
+        if(settings.alertSound!=="siren"&&now-this._lastLoopPlay>2500){
+          Sound.play(settings.alertSound); this._lastLoopPlay=now; }
+      }
+    }else{
+      if(this._alertActive) this.alertStop();
+      this._sirenAllowedFrom=0;
+    }
+
+    if(settings.motivationEnabled&&res.state==="distracted"&&res.episode&&
+       motivationDue(res.episode.startedAt,this.lastMotivAt,now,this.engine.p)){
+      this.lastMotivAt=now;
+      this.alertEng.tryFire("motivation",now,this.motiv.next());
+    }
+    this.updateSessionUI(now,audio?audio.level:0,vs,visFresh);
+    saveActiveSnapshot(s,s.cfg,s.monitoring);
+  },
+  startPomoPhase(ph){
+    const p=settings.pomodoro; this.pomoPhase=ph;
+    const mins=ph==="focus"?p.focus:ph==="short"?p.short:p.long;
+    this.phaseEnd=realClock()+mins*60000;
+    if(ph==="focus"&&this.session.phase==="studying") this.session.setSub("focused");
+    this.setChip();
+  },
+  advancePomodoro(now){
+    const p=settings.pomodoro, s=this.session;
+    if(this.pomoPhase==="focus"){
+      if(this.pomoCycle>=p.cycles){ s.cfg.goalForced=true; this.endSession(true); return; }
+      const ph=(this.pomoCycle%p.cycles===0)?"long":"short";
+      this.alertEng.tryFire("phase",now,`Focus block ${this.pomoCycle}/${p.cycles} done — take a ${ph==="long"?p.long:p.short} minute break.`);
+      this.startPomoPhase(ph);
+      if(s.phase==="studying") s.to("break");
+    }else{
+      this.pomoCycle++;
+      this.alertEng.tryFire("phase",now,"Break over — back to focus.");
+      if(s.phase==="break") s.to("studying");
+      this.startPomoPhase("focus");
+    }
+  },
+  updateSessionUI(now,micLevel,vs,visFresh){ UI.session.update(now,micLevel,vs,visFresh); },
+
+  /* ---------- controls ---------- */
+  pauseResume(){
+    const s=this.session;
+    if(s.phase==="studying"){ s.tick(); this._pausedAt=realClock(); s.to("paused"); s.setSub("paused");
+      this.alertStop(); this.setChip();
+      toast("Session paused — the clock, monitoring and siren are stopped.","pause"); }
+    else if(s.phase==="paused"){ s.to("studying");
+      if(this.phaseEnd) this.phaseEnd+=realClock()-this._pausedAt;
+      s.lastTick=realClock();
+      this.resetSignalState(); this._graceUntil=realClock()+15000;
+      s.setSub("focused"); this.setChip(); toast("Resumed. Back to it.","play"); }
+    UI.session.syncControls(); UI.session.update(realClock(),0,null,false);
+  },
+  toggleBreak(){
+    const s=this.session;
+    if(s.phase==="studying"){ s.tick(); s.to("break"); s.setSub("break"); this.alertStop(); this.setChip();
+      toast("Break started. Detection is paused — breaks are never counted as distraction.","coffee"); }
+    else if(s.phase==="break"){ s.to("studying"); s.lastTick=realClock();
+      this.resetSignalState(); this._graceUntil=realClock()+15000;
+      s.setSub("focused"); this.setChip(); }
+    UI.session.syncControls(); UI.session.update(realClock(),0,null,false);
+  },
+  requestStop(){
+    const s=this.session; s.tick();
+    const acc=s.acc, study=s.studyMs(), score=s.focusScore();
+    const stats=[["Elapsed study time",fmtMin(study)],["Focused",fmtMin(acc.focusedMs+acc.possiblyMs)],
+      ["Distracted",fmtMin(acc.distractedMs)],["Breaks",fmtMin(acc.breakMs)],
+      ["Goal",`${fmtMin(study)} / ${s.cfg.goalMinutes} min`]];
+    if(score!=null) stats.push(["Focus score",score+"%"]);
+    modal({ title:"End your study session?",
+      body:`<p class="mbody">You still have momentum. Here's what this session looks like so far:</p>
+        <div class="stopStats">${stats.map(r=>`<div><span>${r[0]}</span><b>${r[1]}</b></div>`).join("")}</div>
+        <p class="mbody">${score!=null&&score>=75?"You're in a strong rhythm — the next block is where the real gains are.":"Even a few more focused minutes count. Want to give it one more push?"}</p>`,
+      actions:[
+        {label:"Keep studying",cls:"accent",icon:"spark",fn:()=>{ closeModal();
+          if(s.phase==="paused"||s.phase==="break"){ s.to("studying"); s.lastTick=realClock();
+            this.resetSignalState(); this._graceUntil=realClock()+15000;
+            s.setSub("focused"); }
+          this.setChip(); UI.session.syncControls(); toast("Good call. The next ten minutes are yours.","spark"); }},
+        {label:"End session",cls:"danger",icon:"x",fn:()=>{ closeModal(); this.endSession(false); }}
+      ]});
+  },
+  async endSession(auto){
+    const s=this.session; if(s.phase==="ended") return;
+    clearInterval(this.monTimer);
+    this.alertStop();
+    this.persistZones();
+    $("#firstHint").classList.remove("on");
+    s.tick();
+    this.vision.stop(); this.camera.stop(); this.audio.stop();
+    const rec=s.stop();
+    localStorage.removeItem(LS_ACTIVE);
+    if(settings.autoSave){ const res=await Store.saveSession(rec);
+      toast(res?.where==="local"?"Session saved on this device":"Session saved to the database","check"); }
+    this.phase="idle"; this.setChip();
+    UI.complete.render(rec,auto);
+    this.showView("complete");
+  },
+
+  showView(name){
+    $$(".view").forEach(v=>v.classList.remove("on"));
+    $("#view-"+name).classList.add("on");
+    $$("#nav button").forEach(b=>b.classList.toggle("active",b.dataset.view===name));
+    const locked=this.phase==="studying"||this.phase==="paused"||this.phase==="break";
+    $$("#nav button").forEach(b=>{ if(b.dataset.view!=="prep") b.classList.toggle("locked",locked&&b.dataset.view!==name&&name==="session"); });
+  }
+};
+
+/* ---------- crash recovery ---------- */
+let snapCounter=0;
+function saveActiveSnapshot(s,cfg,mode){
+  if(++snapCounter%20!==0) return;
+  try{ localStorage.setItem(LS_ACTIVE,JSON.stringify({ cfg,mode,phase:s.phase,acc:s.acc,
+    events:s.events,segments:s.segments,startWall:s.startWall,heartbeat:Date.now(),
+    pomoCycle:App.pomoCycle,pomoPhase:App.pomoPhase,phaseEnd:App.phaseEnd })); }catch(e){}
+}
+function checkRecovery(){
+  let snap=null; try{ snap=JSON.parse(localStorage.getItem(LS_ACTIVE)||"null"); }catch(e){}
+  if(!snap||Date.now()-snap.heartbeat>10*60000){ if(snap) localStorage.removeItem(LS_ACTIVE); return; }
+  modal({title:"Recover interrupted session?",
+    body:`<p class="mbody">A study session started at <b>${new Date(snap.startWall).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})}</b> appears to have been interrupted. Your elapsed time can be restored.</p><p class="mbody">Camera and microphone permissions will be requested again.</p>`,
+    actions:[
+      {label:"Discard",cls:"",icon:"x",fn:()=>{ localStorage.removeItem(LS_ACTIVE); closeModal(); }},
+      {label:"Resume session",cls:"accent",icon:"play",fn:async()=>{ closeModal();
+        const cfg={...snap.cfg,pomodoro:false};
+        await App.beginSession(cfg);
+        const s=App.session;
+        const elapsed=(snap.acc.focusedMs||0)+(snap.acc.possiblyMs||0)+(snap.acc.distractedMs||0);
+        s.startPerf=realClock()-elapsed; s.lastTick=realClock(); s.startWall=snap.startWall;
+        Object.assign(s.acc,snap.acc||{}); s.events=snap.events||[];
+        s.segments=snap.segments&&snap.segments.length?snap.segments:[{s:"focused",t0:0,t1:elapsed}];
+        toast("Session recovered. Welcome back.","play"); }}
+    ]});
+}
+window.addEventListener("beforeunload",e=>{ if(["studying","paused","break"].includes(App.phase)){ e.preventDefault(); e.returnValue=""; }});
+
+/* ---------- UI ---------- */
+function toast(msg,icon="info"){
+  const el=document.createElement("div"); el.className="toast"; el.innerHTML=I(icon)+`<span>${msg}</span>`;
+  $("#toasts").appendChild(el);
+  setTimeout(()=>{el.classList.add("out");setTimeout(()=>el.remove(),350);},4200);
+}
+function modal({title,body,actions}){
+  const root=$("#modalRoot");
+  root.innerHTML=`<div class="modal"><h3>${title}</h3>${body}<div class="modalActions"></div></div>`;
+  const act=root.querySelector(".modalActions");
+  for(const a of actions){ const b=document.createElement("button"); b.className="btn "+(a.cls||"");
+    b.innerHTML=(a.icon?I(a.icon):"")+a.label; b.onclick=a.fn; act.appendChild(b); }
+  root.classList.add("on");
+}
+function closeModal(){ $("#modalRoot").classList.remove("on"); $("#modalRoot").innerHTML=""; }
+ $("#modalRoot").addEventListener("click",e=>{ if(e.target.id==="modalRoot") closeModal(); });
+
+const EV_LABEL={phone:"phone in view",away:"left the desk","looking-away":"looking away","looking-down":"looking down",talking:"talking",audio:"media/conversation sound",movement:"restless"};
+
+const UI={
+  session:{
+    enter(cfg){
+      $("#sessionSubject").innerHTML=
+        `<b>${cfg.subject||"Study session"}</b>${cfg.task?` · ${cfg.task}`:""}${cfg.target?` · target: ${cfg.target}`:""}`;
+      $("#camVideo").style.display=App.effCam?"":"none";
+      $("#selfToggle").textContent=App.effCam?"hide self-view":"camera unavailable";
+      $("#breakBtn").style.display=cfg.pomodoro?"none":"";
+      this.syncControls(); this.hideAlert(); this.showOverride(false);
+      App.ribbonCanvas=$("#ribbonCanvas");
+    },
+    syncControls(){
+      const s=App.session;
+      $("#pauseBtn").innerHTML=s.phase==="paused"?I("play")+"Resume":I("pause")+"Pause";
+      $("#breakBtn").innerHTML=s.phase==="break"?I("play")+"End break":I("coffee")+"Take a break";
+      $("#pauseBtn").disabled=s.phase==="break"; $("#breakBtn").disabled=s.phase==="paused";
+      $("#stopBtn").disabled=false;
+    },
+    showOverride(on){ $("#overrideBtn").style.display=on?"":"none"; },
+    hideAlert(){ $("#alertBanner").classList.remove("on"); },
+    update(now,micLevel,vs,visFresh){
+      const s=App.session,e=App.engine; if(!e||!s.cfg) return;
+      s.tick();
+      if(s.cfg.pomodoro&&App.phaseEnd){
+        $("#timerBig").textContent=fmtClock(Math.max(0,App.phaseEnd-now));
+        $("#ribbonRight").textContent=`Pomodoro ${App.pomoPhase==="focus"?`focus ${App.pomoCycle}/${settings.pomodoro.cycles}`:App.pomoPhase+" break"}`;
+      } else {
+        $("#timerBig").textContent=fmtClock(s.studyMs());
+        $("#ribbonRight").textContent="";
+      }
+      const map={focused:["Focused","st-focused"],possibly:["Possibly distracted","st-possibly"],
+        distracted:["Distracted — back to the desk","st-distracted"],away:["Away","st-away"],
+        calibrating:["Calibrating your posture","st-calibrating"],unobserved:["Unobserved (tab in background)","st-unobserved"]};
+      let label,cls;
+      if(s.phase==="paused"){label="Paused";cls="st-paused";}
+      else if(s.phase==="break"){label="On break";cls="st-break";}
+      else [label,cls]=map[e.state]||map.focused;
+      $("#statusWord").textContent=label;
+      const pill=$("#statusPill"); pill.textContent=label; pill.className="pill "+cls;
+      const score=s.focusScore();
+      $("#scoreVal").textContent=score==null?"—":score+"%";
+      $("#focusedVal").textContent=fmtMin(s.acc.focusedMs+s.acc.possiblyMs);
+      $("#distractVal").textContent=fmtMin(s.acc.distractedMs);
+      $("#currentDistract").textContent=(e.state==="distracted"&&e.episode)?fmtClock(now-e.episode.startedAt):"—";
+      $("#goalVal").textContent=`${Math.floor(s.studyMs()/60000)} / ${s.cfg.goalMinutes} min`;
+      $("#goalBar").style.width=clamp(s.studyMs()/(s.cfg.goalMinutes*60000)*100,0,100)+"%";
+      $("#goalLabel").textContent=s.cfg.pomodoro?`Pomodoro · cycle ${App.pomoCycle}/${settings.pomodoro.cycles}`:"Goal progress";
+      drawRibbon(App.ribbonCanvas,s.segments,Math.max(s.cfg.goalMinutes*60000,s.studyMs()+30000),now-s.startPerf);
+      const camOn=App.effCam&&App.camera.active;
+      $("#camDot").className="dot "+(camOn?(vs&&vs.present?"live":"warn"):"err");
+      $("#camStatus").textContent=!App.effCam?"Off":camOn?(visFresh?(vs.present?"Face detected":"No face"):"Starting…"):"Lost";
+      const micOn=App.effMic&&App.audio.ready;
+      $("#micDot").className="dot "+(micOn?"live pulse":"err");
+      $("#micStatus").textContent=micOn?(App.audio.activeSec>2?"Sound detected":"Quiet"):"Off";
+      $("#micLevel").style.width=(micLevel!=null?Math.round(micLevel*100):0)+"%";
+      const t=App.telemetry; let tel="—";
+      if(t){ if(t.away!=null) tel=`away ${fmtClock(t.away)}`;
+        else { const bits=[];
+          if(t.deg!=null) bits.push(`dev ${t.deg.toFixed(0)}°`);
+          if(t.zones!=null) bits.push(`z${t.zones} · eng ${t.eng}%`);
+          if(App.vision.phoneReady) bits.push(t.phone?`PHONE ${(t.phoneScore*100|0)}% ${t.src==="screen"?"(screen)":""}`:"phone —");
+          else if(t.flick) bits.push(`flick ${t.flick}`);
+          else if(t.bow) bits.push(`bow ${fmtClock(t.bow)}`);
+          if(App.audio.ready) bits.push(`snd ${App.audio.activeSec.toFixed(0)}s`);
+          tel=bits.join(" · ")||"—"; } }
+      $("#telemetry").textContent=tel;
+      $("#monitorDetail").textContent=App.monitoringLabel().t
+        .replace("AI monitoring active · ","").replace("Monitoring · ","");
+      App.setChip();
+    }
+  },
+  complete:{
+    render(rec,auto){
+      const d=rec.durations, study=rec.studyMs;
+      $("#cKicker").textContent=auto?"Goal reached — session complete":"Session complete";
+      $("#cTitle").textContent=rec.focusScore==null?(rec.goalMet?"Goal reached.":"Session saved."):(rec.focusScore>=85?"Excellent work.":rec.focusScore>=65?"Solid session.":"Rough one — that's data too.");
+      const longestRec=rec.events.slice().sort((a,b)=>b.durationMs-a.durationMs)[0];
+      $("#cStats").innerHTML=[
+        ["Total time",fmtMin(study)],["Focused",fmtMin(d.focusedMs+d.possiblyMs)],["Distracted",fmtMin(d.distractedMs)],
+        ["Breaks",fmtMin(d.breakMs)],["Focus score",rec.focusScore==null?"—":rec.focusScore+"%"],
+        ["Distractions",String(rec.events.filter(e=>!e.corrected).length)],
+        ["Longest drift",rec.longestDistractionMs>0?fmtClock(rec.longestDistractionMs):"—"],
+        ["Goal",rec.goalMet?"Completed":"Not reached"]
+      ].map(r=>`<div><div class="k">${r[0]}</div><div class="v"${r[0]==="Goal"&&rec.goalMet?' style="color:var(--accent)"':""}>${r[1]}</div></div>`).join("");
+      setTimeout(()=>drawRibbon($("#cRibbon"),rec.segments,rec.studyMs+d.breakMs+d.pausedMs,null),50);
+      const parts=[];
+      if(rec.focusScore==null) parts.push("This session ran without monitoring, so there's no attention data — just your time on the clock.");
+      else if(rec.focusScore>=85) parts.push(`You stayed focused for most of the session — ${rec.focusScore}% is a strong result.`);
+      else if(rec.focusScore>=60) parts.push(`You held ${rec.focusScore}% focus. There's a solid base here to build on.`);
+      else parts.push(`Focus came in at ${rec.focusScore}%. That's worth understanding rather than judging.`);
+      if(longestRec&&rec.longestDistractionMs>0){
+        const frac=longestRec.startOffsetMs/Math.max(1,rec.studyMs);
+        const when=frac<.34?"early in the session":frac<.67?"around the middle of the session":"toward the end of the session";
+        parts.push(`Your longest drift (${fmtClock(rec.longestDistractionMs)}, mostly ${EV_LABEL[longestRec.type]||longestRec.type}) happened ${when}.`);
+      }
+      if(rec.corrections>0) parts.push(`You corrected the system ${rec.corrections} time${rec.corrections>1?"s":""} — those areas are now part of its learned model.`);
+      if(d.breakMs>0) parts.push(`You took ${fmtMin(d.breakMs)} of breaks — planned rest like that protects focus, it doesn't cost it.`);
+      if(!rec.goalMet) parts.push(`You reached ${fmtMin(study)} of your ${rec.goalMinutes} minute goal. A shorter, fully-completed block often beats a longer, interrupted one.`);
+      if(rec.mode!=="pomodoro"&&rec.events.filter(e=>!e.corrected).length>=4) parts.push("Consider enabling Pomodoro mode — scheduled breaks reduce unplanned drifting.");
+      if(rec.goalMet) parts.push("Goal completed. Consider a real break before your next study block.");
+      $("#cSummary").innerHTML=parts.join(" ");
+    }
+  }
+};
+
+/* ---------- History view ---------- */
+async function renderHistory(){
+  const all=(await Store.sessions()).slice().reverse(), list=$("#historyList");
+  if(!all.length){ list.innerHTML=`<div class="card" style="text-align:center;color:var(--muted);padding:48px">
+    <p class="serif" style="font-size:22px;margin-bottom:6px">No sessions yet</p>
+    <p>Finish your first study session and it will appear here.</p></div>`; return; }
+  list.innerHTML="";
+  for(const r of all){
+    const d=r.durations, el=document.createElement("div"); el.className="histItem";
+    const evHtml=r.events.length?r.events.map(e=>`<div><span class="t">+${fmtClock(e.startOffsetMs)}</span>
+      <span>${e.corrected?`<s>${EV_LABEL[e.type]||e.type}</s> <b style="color:var(--accent)">corrected by you</b>`:(EV_LABEL[e.type]||e.type)}</span>
+      <span>${fmtClock(e.durationMs)}</span><span>peak ${(e.peakConf*100|0)}%</span></div>`).join("")
+      :`<p class="hint">No distraction events recorded.</p>`;
+    el.innerHTML=`<div class="histHead">
+        <span class="date">${new Date(r.date).toLocaleDateString([],{month:"short",day:"numeric"})} · ${r.startClock}</span>
+        <span class="sub"><b>${r.subject||"Study session"}</b>${r.task?" — "+r.task:""}${r.mode==="pomodoro"?" · pomodoro":""}</span>
+        <span>${fmtMin(r.studyMs)}</span><span class="score">${r.focusScore==null?"—":r.focusScore+"%"}</span>${I("info",15)}
+      </div>
+      <div class="histDetail">
+        <div class="histStats">
+          <span>Focused <b>${fmtMin(d.focusedMs)}</b></span><span>Distracted <b>${fmtMin(d.distractedMs)}</b></span>
+          <span>Possibly <b>${fmtMin(d.possiblyMs)}</b></span><span>Breaks <b>${fmtMin(d.breakMs)}</b></span>
+          <span>Events <b>${r.events.filter(e=>!e.corrected).length}</b></span>
+          <span>Longest <b>${r.longestDistractionMs?fmtClock(r.longestDistractionMs):"—"}</b></span>
+          <span>Goal <b>${r.goalMinutes} min ${r.goalMet?"· met":"· not met"}</b></span>
+          <span>Monitoring <b>${r.monitoring}</b></span>
+        </div>
+        <canvas width="720" height="46" style="width:100%"></canvas>
+        <div class="evList">${evHtml}</div>
+      </div>`;
+    el.querySelector(".histHead").onclick=()=>{ el.classList.toggle("open");
+      if(el.classList.contains("open")) setTimeout(()=>drawRibbon(el.querySelector("canvas"),r.segments,r.studyMs+d.breakMs+d.pausedMs,null),30); };
+    list.appendChild(el);
+  }
+}
+
+/* ---------- Insights view ---------- */
+async function renderInsights(){
+  const A=await Store.analytics();
+  const today=A.daily[A.daily.length-1]||{};
+  $("#insToday").innerHTML=[
+    ["Study time",fmtMin(today.study_ms||0)],["Focused",fmtMin(today.focused_ms||0)],
+    ["Distracted",fmtMin(today.distracted_ms||0)],["Sessions",String(today.sessions||0)],
+    ["Avg focus score",today.avg_score==null?"—":today.avg_score+"%"]
+  ].map(c=>`<div class="insCard"><div class="k">${c[0]}</div><div class="v">${c[1]}</div></div>`).join("");
+  const wk=A.weekly, bd=A.productive_day;
+  $("#insWeek").innerHTML=[
+    ["Study hours",(wk.study_hours||0).toFixed(1)+"h"],["Sessions",String(wk.sessions||0)],
+    ["Avg focus",wk.avg_score==null?"—":wk.avg_score+"%"],
+    ["Longest session",wk.longest_ms?fmtMin(wk.longest_ms):"—"],
+    ["Most productive day",bd?bd.day:"—"]
+  ].map(c=>`<div class="insCard"><div class="k">${c[0]}</div><div class="v">${c[1]}</div></div>`).join("");
+  $("#chartDays").innerHTML=barChart(A.daily.map(d=>({label:d.label,value:Math.round((d.focused_ms||0)/60000)})));
+  const slope=A.trend?.slope;
+  $("#trendText").textContent=slope==null?"Complete a couple of monitored sessions to see your trend.":
+    slope>.5?`Your focus is improving — up about ${slope.toFixed(1)} points per session over your last ${A.trend.n}.`:
+    slope<-.5?`Focus has slipped about ${Math.abs(slope).toFixed(1)} points per session recently. Shorter blocks or Pomodoro mode may help.`:
+    "Your focus has been steady across recent sessions.";
+  $("#chartTrend").innerHTML=lineChart(A.trend?.points||[]);
+}
+
+/* ---------- Settings view ---------- */
+function renderSettings(){
+  $("#setTheme").value=settings.theme; $("#setCam").checked=settings.cameraEnabled; $("#setMic").checked=settings.micEnabled;
+  $("#setPhone").checked=settings.phoneDetection;
+  const zn=(settings.zones||[]).length;
+  $("#zonesDesc").textContent=`The adaptive model currently knows ${zn} study zone${zn===1?"":"s"} — screen, notebook, textbook positions. It keeps refining them every session; resetting makes it re-learn from scratch.`;
+  $("#setSens").value=settings.sensitivity; $("#setAlertDelay").value=settings.alertDelaySec;
+  $("#alertDelayOut").textContent=settings.alertDelaySec;
+  $("#setAlertsOn").checked=settings.alertsEnabled; $("#setAlertSound").value=settings.alertSound;
+  $("#setVolume").value=settings.alertVolume; $("#volOut").textContent=settings.alertVolume;
+  $("#setCooldown").value=settings.alertCooldownSec; $("#cooldownOut").textContent=settings.alertCooldownSec;
+  $("#setNotif").checked=settings.browserNotifications;
+  $("#setMotivOn").checked=settings.motivationEnabled; $("#setMotivDelay").value=settings.motivationThresholdSec;
+  $("#motivOut").textContent=fmtMin(settings.motivationThresholdSec*60000);
+  $("#setMotivRepeat").value=settings.motivationRepeatSec; $("#motivRepOut").textContent=settings.motivationRepeatSec+"s";
+  $("#setAutoSave").checked=settings.autoSave;
+  $("#pmFocus").value=settings.pomodoro.focus; $("#pmShort").value=settings.pomodoro.short;
+  $("#pmLong").value=settings.pomodoro.long; $("#pmCycles").value=settings.pomodoro.cycles;
+  const ns=$("#notifState");
+  if(typeof Notification==="undefined") ns.textContent="Not supported in this browser";
+  else ns.textContent=Notification.permission==="granted"?"Permission granted":Notification.permission==="denied"?"Blocked by browser":"Permission not requested";
+}
+function bindSettings(){
+  const bind=(id,key)=>{ $(id).addEventListener("change",e=>{ settings[key]=e.target.type==="checkbox"?e.target.checked:e.target.value; saveSettings(); }); };
+  $("#setTheme").addEventListener("change",e=>{ settings.theme=e.target.value; saveSettings(); applyTheme(); });
+  bind("#setCam","cameraEnabled"); bind("#setMic","micEnabled"); bind("#setPhone","phoneDetection");
+  bind("#setSens","sensitivity");
+  $("#setAlertDelay").addEventListener("input",e=>{ settings.alertDelaySec=+e.target.value; $("#alertDelayOut").textContent=e.target.value; saveSettings(); });
+  bind("#setAlertsOn","alertsEnabled"); bind("#setAlertSound","alertSound");
+  $("#setVolume").addEventListener("input",e=>{ settings.alertVolume=+e.target.value; $("#volOut").textContent=e.target.value; Sound.setVolume(settings.alertVolume); saveSettings(); });
+  $("#setVolume").addEventListener("change",()=>Sound.play("ping",true));
+  $("#setCooldown").addEventListener("input",e=>{ settings.alertCooldownSec=+e.target.value; $("#cooldownOut").textContent=e.target.value; saveSettings(); });
+  $("#setNotif").addEventListener("change",e=>{
+    if(e.target.checked){
+      if(typeof Notification==="undefined"){ e.target.checked=false; toast("Notifications aren't supported in this browser.","x"); return; }
+      Notification.requestPermission().then(p=>{ settings.browserNotifications=(p==="granted"); e.target.checked=settings.browserNotifications;
+        saveSettings(); renderSettings();
+        if(p==="granted") toast("Notifications enabled. At most one per minute, only for real alerts.","bell");
+        else toast("Notification permission was denied — alerts will stay inside the app.","info");
+      });
+    } else { settings.browserNotifications=false; saveSettings(); }
+  });
+  bind("#setMotivOn","motivationEnabled");
+  $("#setMotivDelay").addEventListener("input",e=>{ settings.motivationThresholdSec=+e.target.value; $("#motivOut").textContent=fmtMin(e.target.value*60000); saveSettings(); });
+  $("#setMotivRepeat").addEventListener("input",e=>{ settings.motivationRepeatSec=+e.target.value; $("#motivRepOut").textContent=e.target.value+"s"; saveSettings(); });
+  bind("#setAutoSave","autoSave");
+  const pm=(id,key)=>$(id).addEventListener("change",e=>{ settings.pomodoro[key]=clamp(+e.target.value||1,+e.target.min,+e.target.max); e.target.value=settings.pomodoro[key]; saveSettings(); });
+  pm("#pmFocus","focus"); pm("#pmShort","short"); pm("#pmLong","long"); pm("#pmCycles","cycles");
+  $("#resetZonesBtn").onclick=()=>modal({title:"Reset learned study areas?",
+    body:`<p class="mbody">The model will forget where your screen, notebook and books are, and re-learn them during your next session (your first minute gets extra grace while it learns).</p>`,
+    actions:[{label:"Cancel",cls:"",icon:"x",fn:closeModal},
+      {label:"Reset zones",cls:"danger",icon:"x",fn:()=>{ settings.zones=[]; App.zones=null; saveSettings(); closeModal();
+        renderSettings(); toast("Learned study areas reset.","check"); }}]});
+  $("#exportBtn").onclick=async()=>{
+    if(API.ok){ location.href="/api/export"; return; }
+    const blob=new Blob([JSON.stringify({sessions:lsSessions(),settings,exportedAt:new Date().toISOString()},null,2)],{type:"application/json"});
+    const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="invigi-data.json"; a.click(); URL.revokeObjectURL(a.href);
+  };
+  $("#clearBtn").onclick=()=>modal({title:"Erase all data?",
+    body:`<p class="mbody">This permanently deletes every saved session, your settings and the learned study areas from this browser. This cannot be undone.</p>`,
+    actions:[{label:"Cancel",cls:"",icon:"x",fn:closeModal},
+      {label:"Erase everything",cls:"danger",icon:"x",fn:async()=>{ await Store.reset(); closeModal(); toast("All local data erased.","check"); renderHistory(); renderInsights(); }}]});
+  $("#runTestsBtn").onclick=async()=>{
+    const res=await runTests(), pass=res.filter(r=>r.pass).length;
+    modal({title:`Self-tests: ${pass}/${res.length} passed`,
+      body:`<div>${res.map(r=>`<div class="testRow"><span class="${r.pass?"ok":"fail"}">${r.pass?"PASS":"FAIL"}</span><span class="nm">${r.name}</span>${r.msg?`<span class="msg">${r.msg}</span>`:""}</div>`).join("")}</div>
+        <p class="hint" style="margin-top:12px">Engine and ML-model tests use an injected clock and synthetic signal frames. Camera, microphone and model behavior require a real device — see the init checklist when starting a session.</p>`,
+      actions:[{label:"Close",cls:"primary",icon:"check",fn:closeModal}]});
+  };
+}
+
+/* ---------- prep view ---------- */
+let goalMinutes=60;
+function renderPrep(){
+  $$("#goalChips .chip").forEach(c=>{
+    c.classList.toggle("sel",+c.dataset.mins===goalMinutes&&!$("#customMin").value);
+    c.onclick=()=>{ goalMinutes=+c.dataset.mins; $("#customMin").value=""; $$("#goalChips .chip").forEach(x=>x.classList.remove("sel")); c.classList.add("sel"); };
+  });
+  $("#customMin").oninput=e=>{ if(+e.target.value>=5){ goalMinutes=+e.target.value; $$("#goalChips .chip").forEach(x=>x.classList.remove("sel")); }};
+  $("#prepPomo").checked=settings.pomodoro.enabled;
+  $("#pomoSummary").textContent=`${settings.pomodoro.focus} / ${settings.pomodoro.short} / ${settings.pomodoro.long} min · ${settings.pomodoro.cycles} cycles`;
+  $("#prepPomo").onchange=e=>{ settings.pomodoro.enabled=e.target.checked; saveSettings(); };
+  $("#startBtn").onclick=()=>{
+    Sound.ensure();
+    const cfg={ goalMinutes, subject:$("#subject").value.trim(), task:$("#task").value.trim(),
+      target:$("#target").value.trim(), pomodoro:settings.pomodoro.enabled, wantCam:settings.cameraEnabled, wantMic:settings.micEnabled };
+    App.beginSession(cfg).catch(err=>{ $("#startErr").textContent="Something went wrong while initializing: "+err.message; App.phase="idle"; App.setChip(); });
+  };
+}
+function applyTheme(){ document.documentElement.dataset.theme=settings.theme; }
+
+/* =====================================================================
+   SELF-TEST SUITE — real assertions against the real engines, the
+   ZoneModel, and the audio-accumulation logic, driven by an injected
+   clock and synthetic signal frames.
+   Settings → "Run tests", or window.invigiTests() in the console.
+   ===================================================================== */
+function runTests(){
+  const results=[];
+  const T=(name,fn)=>{ results.push((async()=>{ try{ await fn(); return {name,pass:true}; }
+    catch(e){ return {name,pass:false,msg:e.message}; } })()); };
+  const expect=(c,m)=>{ if(!c) throw new Error(m||"assertion failed"); };
+  const P={T1:.34,T2:.58,gazePartial:12,gazeFull:26,alertDelayMs:8000,
+    awayGraceMs:8000,awayFullMs:18000,adaptiveBonus:0,distractHoldMs:4000,gazeHoldMs:5000,audioHoldMs:8000};
+  const mkEngine=(...a)=>new AttentionEngine(P,...a);
+
+  /* ---- ZoneModel ---- */
+  T("ZoneModel: learns a new study area from sustained presence",()=>{
+    const z=new ZoneModel([]); let unknown=0;
+    for(let i=0;i<20;i++){ const r=z.observe(-24,8); if(!r.known) unknown++; }
+    expect(unknown>0,"region was known before learning (impossible)");
+    expect(z.zones.length===1,"zone not formed");
+    const r=z.observe(-24,8);
+    expect(r.known&&r.sigma<1,"learned zone not recognized afterwards");
+  });
+  T("ZoneModel: distinct directions stay distinct (book ≠ window)",()=>{
+    const z=new ZoneModel([]);
+    for(let i=0;i<20;i++) z.observe(-26,10);
+    for(let i=0;i<20;i++) z.observe(30,-4);
+    expect(z.zones.length===2,"zones merged wrongly: "+z.zones.length);
+    expect(z.observe(-26,10).known,"book zone lost");
+    expect(z.observe(30,-4).known,"window zone lost");
+    expect(!z.observe(0,0).known,"center wrongly absorbed into a side zone");
+  });
+  T("ZoneModel: teach() (user correction) creates the zone immediately",()=>{
+    const z=new ZoneModel([]); z.teach(-20,6);
+    expect(z.observe(-20,6).known,"taught zone not recognized");
+    expect(z.zones.length===1,"teach created wrong zone count");
+  });
+  T("ZoneModel: personalizes spread (wobbly reader gets wider zones)",()=>{
+    const z=new ZoneModel([]);
+    const xs=[-24,-22,-27,-20,-25,-23,-26,-21];
+    xs.forEach(h=>z.observe(h,8)); xs.forEach(h=>z.observe(h,8));
+    expect(z.zones.length===1&&z.zones[0].vx>20,"variance did not adapt: "+(z.zones[0]&&z.zones[0].vx));
+    expect(z.observe(-19,8).known,"natural wobble pushed outside personalized zone");
+  });
+  T("ZoneModel: serializes & warm-starts across sessions",()=>{
+    const z=new ZoneModel([]); for(let i=0;i<16;i++) z.observe(-24,8);
+    const z2=new ZoneModel(z.serialize());
+    expect(z2.observe(-24,8).known,"warm start failed");
+  });
+
+  /* ---- Session engine ---- */
+  T("SessionEngine: legal startup chain, illegal jumps rejected",()=>{
+    const s=new SessionEngine();
+    let threw=false; try{ s.to("studying"); }catch(e){ threw=true; }
+    expect(threw,"idle→studying must stay illegal");
+    s.to("initializing"); s.to("ready"); s.start({goalMinutes:60,monitoring:"timer-only"}); s.to("studying");
+    expect(s.phase==="studying","chain failed");
+  });
+  T("SessionEngine: timer accumulates study time",()=>{
+    const c=new FakeClock(), s=new SessionEngine(()=>c.now());
+    s.to("initializing"); s.to("ready"); s.start({goalMinutes:60,monitoring:"timer-only"}); s.to("studying");
+    for(let i=0;i<40;i++){ c.advance(250); s.tick(); }
+    expect(Math.abs(s.studyMs()-10000)<50,"expected ~10s, got "+s.studyMs());
+  });
+  T("SessionEngine: pause excludes time",()=>{
+    const c=new FakeClock(), s=new SessionEngine(()=>c.now());
+    s.to("initializing"); s.to("ready"); s.start({goalMinutes:60}); s.to("studying");
+    for(let i=0;i<20;i++){ c.advance(250); s.tick(); }
+    s.to("paused"); for(let i=0;i<20;i++){ c.advance(250); s.tick(); }
+    expect(Math.abs(s.studyMs()-5000)<50,"study time leaked during pause");
+    expect(s.acc.pausedMs>=4900,"paused time not counted");
+  });
+  T("SessionEngine: resume continues correctly",()=>{
+    const c=new FakeClock(), s=new SessionEngine(()=>c.now());
+    s.to("initializing"); s.to("ready"); s.start({goalMinutes:60}); s.to("studying");
+    for(let i=0;i<10;i++){ c.advance(250); s.tick(); } s.to("paused"); c.advance(5000);
+    s.to("studying"); s.lastTick=c.now();
+    for(let i=0;i<10;i++){ c.advance(250); s.tick(); }
+    expect(Math.abs(s.studyMs()-5000)<60,"resume mismatch: "+s.studyMs());
+  });
+  T("SessionEngine: break time excluded from study time",()=>{
+    const c=new FakeClock(), s=new SessionEngine(()=>c.now());
+    s.to("initializing"); s.to("ready"); s.start({goalMinutes:60}); s.to("studying");
+    for(let i=0;i<10;i++){ c.advance(250); s.tick(); } s.to("break"); s.lastTick=c.now();
+    for(let i=0;i<20;i++){ c.advance(250); s.tick(); } s.to("studying"); s.lastTick=c.now();
+    for(let i=0;i<10;i++){ c.advance(250); s.tick(); }
+    expect(Math.abs(s.studyMs()-5000)<60,"break leaked into study time");
+    expect(s.acc.breakMs>=4900,"break not tracked");
+  });
+  T("SessionEngine: focus score math (possibly counts half)",()=>{
+    const c=new FakeClock(), s=new SessionEngine(()=>c.now());
+    s.to("initializing"); s.to("ready"); s.start({goalMinutes:60});
+    s.acc={focusedMs:60000,distractedMs:20000,possiblyMs:20000,breakMs:0,pausedMs:0};
+    expect(s.focusScore()===80,"expected 80, got "+s.focusScore());
+  });
+  T("SessionEngine: end-from-break is legal, one 'ended' transition",()=>{
+    const c=new FakeClock(), s=new SessionEngine(()=>c.now());
+    s.to("initializing"); s.to("ready"); s.start({goalMinutes:60}); s.to("studying"); s.to("break");
+    const rec=s.stop();
+    expect(s.phase==="ended","did not reach ended");
+    expect(rec&&rec.studyMs>=0,"no record produced");
+  });
+
+  /* ---- Attention engine ---- */
+  T("AttentionEngine: stays focused on brief glance-away",()=>{
+    const e=mkEngine(); let t=0;
+    for(let i=0;i<24;i++){ t+=250; e.tick({gaze:1,absence:0,absenceFull:0,absenceMs:0,gazeSustainedMs:0,phoneMs:0,audioSustainedMs:0,speech:0,move:0,vision:true,audio:true,dominant:"yaw"},t); }
+    for(let i=0;i<12;i++){ t+=250; e.tick({gaze:0,absence:0,absenceFull:0,absenceMs:0,gazeSustainedMs:0,phoneMs:0,audioSustainedMs:0,speech:0,move:0,vision:true,audio:true,dominant:"yaw"},t); }
+    expect(e.state==="focused","brief distraction escalated to "+e.state);
+  });
+  T("AttentionEngine: READING a learned zone never escalates (the book case)",()=>{
+    const e=mkEngine(); const z=new ZoneModel([]);
+    for(let i=0;i<16;i++) z.observe(-24,8);
+    let t=0;
+    for(let i=0;i<80;i++){
+      t+=250;
+      const obs=z.observe(-24+(i%3),8);
+      const gaze=obs.known?smoothstep(2.6,5.2,obs.sigma)*.5:1;
+      e.tick({gaze,absence:0,absenceFull:0,absenceMs:0,gazeSustainedMs:0,phoneMs:0,audioSustainedMs:0,
+        speech:0,move:0,vision:true,audio:true,dominant:"yaw"},t);
+    }
+    expect(e.state!=="distracted","reading a known book zone escalated to "+e.state);
+  });
+  T("AttentionEngine: sustained PHONE presence triggers 'phone' distraction",()=>{
+    const e=mkEngine(); let t=0, fired=false;
+    for(let i=0;i<48;i++){ t+=250; const phoneMs=Math.max(0,t-1000);
+      e.tick({gaze:0,absence:0,absenceFull:0,absenceMs:0,gazeSustainedMs:0,phoneMs,audioSustainedMs:0,speech:0,move:0,vision:true,audio:true,dominant:"yaw"},t);
+      if(e.state==="distracted"&&!fired){ fired=true; expect(e.episode.type==="phone","wrong type: "+e.episode.type); } }
+    expect(fired,"phone in view never triggered distraction");
+    expect(t<=12000,"phone alert too slow: "+t+"ms");
+  });
+  T("AttentionEngine: SUSTAINED LOUD AUDIO triggers distraction (the reels case)",()=>{
+    const e=mkEngine(); let t=0, fired=false;
+    for(let i=0;i<60;i++){ t+=250; const audioMs=Math.max(0,t-500);
+      e.tick({gaze:0,absence:0,absenceFull:0,absenceMs:0,gazeSustainedMs:0,phoneMs:0,audioSustainedMs:audioMs,
+        speech:0,move:0,vision:true,audio:true,dominant:"yaw"},t);
+      if(e.state==="distracted"&&!fired){ fired=true; expect(e.episode.type==="audio","wrong type: "+e.episode.type); } }
+    expect(fired,"sustained audio never triggered — the v4 bug");
+    expect(t<=16000,"audio alert too slow: "+t+"ms");
+  });
+  T("AttentionEngine: brief noise burst does NOT trigger (door slam test)",()=>{
+    const e=mkEngine(); let t=0;
+    for(let i=0;i<40;i++){ t+=250; e.tick({gaze:0,absence:0,absenceFull:0,absenceMs:0,gazeSustainedMs:0,phoneMs:0,audioSustainedMs:0,speech:0,move:0,vision:true,audio:true,dominant:"yaw"},t); }
+    t+=250; e.tick({gaze:0,absence:0,absenceFull:0,absenceMs:0,gazeSustainedMs:0,phoneMs:0,audioSustainedMs:2500,speech:0,move:0,vision:true,audio:true,dominant:"yaw"},t);
+    for(let i=0;i<16;i++){ t+=250; e.tick({gaze:0,absence:0,absenceFull:0,absenceMs:0,gazeSustainedMs:0,phoneMs:0,audioSustainedMs:0,speech:0,move:0,vision:true,audio:true,dominant:"yaw"},t); }
+    expect(e.state!=="distracted","brief noise escalated");
+  });
+  T("AttentionEngine: leaving the desk alerts fast (invigilator path)",()=>{
+    const e=mkEngine(); let t=0, firedAt=null;
+    for(let i=0;i<100;i++){ t+=250; const absenceMs=t-500;
+      const res=e.tick({gaze:0,absence:smoothstep(8000,18000,absenceMs),absenceFull:smoothstep(18000,22000,absenceMs),
+        absenceMs,gazeSustainedMs:0,phoneMs:0,audioSustainedMs:0,speech:0,move:0,vision:true,audio:true,dominant:"yaw"},t);
+      if(res.state==="distracted"&&firedAt==null) firedAt=t; }
+    expect(firedAt!=null&&firedAt<=22000,"absence alert too slow: "+firedAt);
+    expect(e.episode&&e.episode.type==="away","away type wrong");
+  });
+  T("AttentionEngine: brief absence inside grace stays 'away'",()=>{
+    const e=mkEngine(); let t=0;
+    for(let i=0;i<56;i++){ t+=250; const absenceMs=t-2000;
+      e.tick({gaze:0,absence:smoothstep(8000,18000,absenceMs),absenceFull:smoothstep(18000,22000,absenceMs),
+        absenceMs,gazeSustainedMs:0,phoneMs:0,audioSustainedMs:0,speech:0,move:0,vision:true,audio:true,dominant:"yaw"},t); }
+    expect(e.state!=="distracted","grace absence escalated too early");
+  });
+  T("AttentionEngine: UNFAMILIAR direction + frozen eyes → distracted (zoned out)",()=>{
+    const e=mkEngine(); let t=0, fired=false;
+    for(let i=0;i<60;i++){ t+=250; const g=Math.max(0,t-1000);
+      e.tick({gaze:smoothstep(2.6,5.2,4),absence:0,absenceFull:0,absenceMs:0,gazeSustainedMs:g,phoneMs:0,audioSustainedMs:0,
+        speech:0,move:0,vision:true,audio:true,dominant:"yaw"},t);
+      if(e.state==="distracted") fired=true; }
+    expect(fired,"zoned-out staring never triggered");
+  });
+  T("AttentionEngine: manual override suppresses signal & refocuses",()=>{
+    const e=mkEngine(); let t=0;
+    for(let i=0;i<70;i++){ t+=250; e.tick({gaze:1,absence:0,absenceFull:0,absenceMs:0,gazeSustainedMs:0,phoneMs:0,audioSustainedMs:0,speech:0,move:0,vision:true,audio:true,dominant:"yaw"},t); }
+    const type=e.override(t);
+    expect(type==="looking-away","override type "+type);
+    for(let i=0;i<16;i++){ t+=250; e.tick({gaze:1,absence:0,absenceFull:0,absenceMs:0,gazeSustainedMs:0,phoneMs:0,audioSustainedMs:0,speech:0,move:0,vision:true,audio:true,dominant:"yaw"},t); }
+    expect(e.state==="focused","suppressed signal still escalated");
+  });
+  T("gazeDeviation: writing (small downward) tolerated, sideways caught",()=>{
+    const base={yaw:0,pitch:0,gx:0,gy:0};
+    const write=gazeDeviation({yaw:0,pitch:6,gx:0,gy:.05},base);
+    const side=gazeDeviation({yaw:16,pitch:0,gx:.14,gy:0},base);
+    expect(write.deg<12,"writing flagged: "+write.deg);
+    expect(side.deg>=12,"sideways glance missed: "+side.deg);
+  });
+  T("AlertEngine: cooldown suppresses rapid re-alerts",()=>{
+    const saved={...settings};
+    Object.assign(settings,{alertsEnabled:true,alertCooldownSec:45,alertSound:"siren",browserNotifications:false});
+    const a=new AlertEngine(); const r1=a.tryFire("alert",1000,"m"), r2=a.tryFire("alert",5000,"m"), r3=a.tryFire("alert",50000,"m");
+    Object.assign(settings,saved);
+    expect(r1&&!r2&&r3,`cooldown broken: ${r1},${r2},${r3}`);
+  });
+  T("Motivation: fires at 2 minutes, repeats on interval, no immediate repeat",()=>{
+    const p={motivationMs:120000,motivationRepeatMs:75000}, m=new MotivationEngine();
+    expect(!motivationDue(100000,0,150000,p),"fired before 2 min");
+    expect(motivationDue(100000,0,220000,p),"did not fire at 2 min");
+    expect(!motivationDue(100000,220000,250000,p),"fired before repeat interval");
+    expect(motivationDue(100000,220000,300000,p),"did not fire after repeat interval");
+    expect(m.next()!==m.next(),"motivation messages repeated immediately");
+  });
+  T("Persistence: settings (incl. learned zones) round-trip through Store",async()=>{
+    const old=JSON.parse(JSON.stringify(settings));
+    settings.alertDelaySec=19; settings.zones=[{mx:-24,my:8,vx:36,vy:36,n:9}];
+    await Store.saveSettings();
+    const loaded=await Store.settings();
+    expect(loaded&&loaded.alertDelaySec===19,"settings did not persist");
+    expect(loaded&&Array.isArray(loaded.zones)&&loaded.zones.length===1,"zones did not persist");
+    settings=old; await Store.saveSettings();
+  });
+  T("Persistence: session record round-trip through Store",async()=>{
+    const rec={id:"test-"+uid(),date:new Date().toISOString(),day:dayKey(new Date()),
+      startClock:"",endClock:"",subject:"__test__",task:"",target:"",goalMinutes:25,
+      durations:{focusedMs:1000,possiblyMs:0,distractedMs:0,breakMs:0,pausedMs:0},
+      studyMs:1000,events:[],segments:[],focusScore:100,longestDistractionMs:0,
+      goalMet:false,mode:"focus",monitoring:"timer-only",corrections:0};
+    await Store.saveSession(rec);
+    const all=await Store.sessions();
+    expect(all.some(r=>r.id===rec.id),"session not retrievable");
+    await Store.deleteSession(rec.id);
+    const after=await Store.sessions();
+    expect(!after.some(r=>r.id===rec.id),"test session not cleaned up");
+  });
+  T("Analytics: daily aggregation (pure)",()=>{
+    const now=Date.now();
+    const recs=[{date:new Date(now).toISOString(),day:dayKey(now),studyMs:600000,durations:{focusedMs:480000,possiblyMs:60000,distractedMs:60000,breakMs:0,pausedMs:0},focusScore:85},
+                {date:new Date(now-3600e3).toISOString(),day:dayKey(now),studyMs:300000,durations:{focusedMs:240000,possiblyMs:0,distractedMs:60000,breakMs:0,pausedMs:0},focusScore:80}];
+    const d=aggregateDaily(recs)[dayKey(now)];
+    expect(d&&d.studyMs===900000&&d.sessions===2,"daily totals wrong");
+    expect(d.focusedMs===780000,"focused sum wrong");
+  });
+  T("Analytics: weekly aggregates, productive day, trend slope",()=>{
+    const now=Date.now();
+    const recs=[{date:new Date(now).toISOString(),studyMs:36e5,durations:{focusedMs:30e5,possiblyMs:0,distractedMs:6e5,breakMs:0,pausedMs:0},focusScore:83},
+                {date:new Date(now-2*864e5).toISOString(),studyMs:72e5,durations:{focusedMs:66e5,possiblyMs:0,distractedMs:6e5,breakMs:0,pausedMs:0},focusScore:91},
+                {date:new Date(now-20*864e5).toISOString(),studyMs:50e5,durations:{focusedMs:40e5,possiblyMs:0,distractedMs:10e5,breakMs:0,pausedMs:0},focusScore:70}];
+    const w=aggregateWeekly(recs,now);
+    expect(w.sessions===2&&Math.abs(w.studyHours-3)<.01&&w.avgScore===87&&w.longestMs===72e5,"weekly math wrong");
+    expect(mostProductiveDay(recs).focusedMs>=66e5,"productive day wrong");
+    expect(trendSlope([60,65,70,78])>0&&trendSlope([90,80,75,60])<0&&trendSlope([80,80,80])===0&&trendSlope([80])===null,"slope wrong");
+  });
+  T("SessionEngine: ribbon segments stay contiguous",()=>{
+    const c=new FakeClock(), s=new SessionEngine(()=>c.now());
+    s.to("initializing"); s.to("ready"); s.start({goalMinutes:60}); s.to("studying");
+    s.setSub("possibly"); for(let i=0;i<10;i++){ c.advance(250); s.tick(); }
+    s.setSub("distracted"); for(let i=0;i<10;i++){ c.advance(250); s.tick(); }
+    s.setSub("focused"); for(let i=0;i<10;i++){ c.advance(250); s.tick(); }
+    for(let i=1;i<s.segments.length;i++) expect(Math.abs(s.segments[i].t0-s.segments[i-1].t1)<2,"gap between segments at "+i);
+  });
+  return Promise.all(results);
+}
+window.invigiTests=runTests;
+
+/* ---------- boot ---------- */
+async function boot(){
+  await Store.ping();
+  mergeSettings(await Store.settings());
+  applyTheme(); renderPrep(); renderSettings(); bindSettings();
+  $("#storageHint").textContent=API.ok
+    ?"Sessions save to the local database via the Python server."
+    :"Standalone mode — sessions, settings and learned study zones are saved in this browser on this device.";
+  App.setChip();
+  $$("#nav button").forEach(b=>b.addEventListener("click",async()=>{
+    const v=b.dataset.view;
+    if(v==="history") await renderHistory();
+    if(v==="insights") await renderInsights();
+    if(v==="settings") renderSettings();
+    App.showView(v);
+  }));
+  $("#pauseBtn").onclick=()=>App.pauseResume();
+  $("#breakBtn").onclick=()=>App.toggleBreak();
+  $("#stopBtn").onclick=()=>App.requestStop();
+  $("#stopSirenBtn").onclick=()=>App.userStopSiren();
+  $("#overrideBtn").onclick=()=>{
+    if(!App.engine) return;
+    const t=App.engine.override(performance.now());
+    App.alertStop(); App._sirenAllowedFrom=0;
+    if(App._lastHV&&App.zones){ App.zones.teach(App._lastHV.h,App._lastHV.v); App.persistZones(); }
+    settings.adaptive[t]=(settings.adaptive[t]||0)+1; saveSettings();
+    UI.session.hideAlert(); UI.session.showOverride(false);
+    toast("Learned — that direction is now part of your study areas.","check");
+  };
+  $("#againBtn").onclick=()=>{ App.showView("prep"); renderPrep(); };
+  $("#cHistoryBtn").onclick=async()=>{ await renderHistory(); App.showView("history"); };
+  $("#selfToggle").onclick=e=>{ e.preventDefault();
+    const v=$("#camVideo"); const hidden=v.style.display==="none";
+    v.style.display=hidden?"":"none"; e.target.textContent=hidden?"hide self-view":"show self-view"; };
+  document.addEventListener("keydown",e=>{
+    if(e.code==="Space"&&["studying","paused","break"].includes(App.session.phase)&&
+       !["INPUT","TEXTAREA","SELECT"].includes(document.activeElement.tagName)&&$("#view-session").classList.contains("on")){
+      e.preventDefault(); App.pauseResume(); }
+  });
+  checkRecovery();
+}
+document.addEventListener("visibilitychange",()=>{ if(App.phase==="studying") App.setChip(); });
+boot();
+</script>
+</body>
+</html>
